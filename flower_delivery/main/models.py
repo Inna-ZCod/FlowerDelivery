@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+
 
 # Модель товара (букета)
 class Product(models.Model):
@@ -12,8 +14,6 @@ class Product(models.Model):
 
 
 # Модель заказа
-from django.contrib.auth.models import User
-
 class Order(models.Model):
     STATUS_CHOICES = [
         ('accepted', 'Принят'),
@@ -41,3 +41,13 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Отзыв от {self.user.username} - {self.rating} звезды"
+
+
+# модель для хранения информации о корзине
+class Cart(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Пользователь, владелец корзины
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)  # Товар в корзине
+    quantity = models.PositiveIntegerField(default=1)  # Количество одного и того же товара
+
+    def __str__(self):
+        return f"{self.product.name} x {self.quantity} (в корзине {self.user.username})"

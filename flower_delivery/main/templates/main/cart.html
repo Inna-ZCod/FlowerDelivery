@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Корзина</title>
+</head>
+<body>
+    <h1>Ваша корзина</h1>
+    <ul>
+        {% for item in cart_items %}
+        <li>
+            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="100">
+            <strong>{{ item.product.name }}</strong>
+            <p>Количество: {{ item.quantity }}</p>
+            <p>Цена за единицу: {{ item.product.price }} руб.</p>
+            <p>Итого: {{ item.total_price }} руб.</p>
+        </li>
+        {% endfor %}
+    </ul>
+    <h2>Общая стоимость: {{ total_price }} руб.</h2>
+    <br>
+    <a href="{% url 'checkout' %}">Оформить заказ</a>
+    <br>
+    <a href="{% url 'catalog' %}">Продолжить покупки</a>
+</body>
+</html>
