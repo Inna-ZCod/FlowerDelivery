@@ -8,5 +8,8 @@ urlpatterns = [
     path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'), # Добавление товара в корзину
     path('cart/', views.cart, name='cart'), # Просмотр корзины
     path('checkout/', views.checkout, name='checkout'), # Оформление заказа
+    path('cart/update/<int:cart_item_id>/', views.update_cart, name='update_cart'),
+    path('cart/delete/<int:cart_item_id>/', views.delete_cart_item, name='delete_cart_item'),
     path('order/success/', views.order_success, name='order_success'), # Подтверждение заказа
+    path('orders/', views.user_orders, name='user_orders'), # Отображение заказов
 ]

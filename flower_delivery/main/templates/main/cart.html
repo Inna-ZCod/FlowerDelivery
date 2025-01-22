@@ -14,6 +14,19 @@
             <p>Количество: {{ item.quantity }}</p>
             <p>Цена за единицу: {{ item.product.price }} руб.</p>
             <p>Итого: {{ item.total_price }} руб.</p>
+
+            <!-- Кнопки для изменения количества -->
+            <form action="{% url 'update_cart' item.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" name="action" value="increase">+</button>
+                <button type="submit" name="action" value="decrease">-</button>
+            </form>
+
+            <!-- Кнопка для удаления товара -->
+            <form action="{% url 'delete_cart_item' item.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">Удалить</button>
+            </form>
         </li>
         {% endfor %}
     </ul>
