@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('', views.home, name='home'),  # Главная страница
@@ -12,4 +13,8 @@ urlpatterns = [
     path('cart/delete/<int:cart_item_id>/', views.delete_cart_item, name='delete_cart_item'),
     path('order/success/', views.order_success, name='order_success'), # Подтверждение заказа
     path('orders/', views.user_orders, name='user_orders'), # Отображение заказов
+    path('register/', views.register, name='register'), # Регистрация
+    path('connect-bot/', views.connect_bot, name='connect_bot'),  # Маршрут для привязки бота
+    path('login/', auth_views.LoginView.as_view(template_name='main/login.html'), name='login'), # Авторизация
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'), # Выход из аккаунта
 ]

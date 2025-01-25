@@ -1,5 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+# Расширяем стандартную модель User
+User.add_to_class('telegram_chat_id', models.CharField(max_length=50, blank=True, null=True))
 
 
 # Модель товара (букета)
@@ -11,6 +18,10 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = "Товар"  # Название модели в единственном числе
+        verbose_name_plural = "Товары"  # Название модели во множественном числе
 
 
 # Модель заказа
@@ -26,9 +37,14 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='accepted')  # Статус заказа
     total_price = models.DecimalField(max_digits=10, decimal_places=2)  # Общая цена
     created_at = models.DateTimeField(auto_now_add=True)  # Дата оформления
+    telegram_chat_id = models.CharField(max_length=50, blank=True, null=True)  # Telegram ID пользователя
 
     def __str__(self):
         return f"Заказ #{self.id} - {self.status}"
+
+    class Meta:
+        verbose_name = "Заказ"
+        verbose_name_plural = "Заказы"
 
 
 # Модель отзыва
@@ -42,6 +58,10 @@ class Review(models.Model):
     def __str__(self):
         return f"Отзыв от {self.user.username} - {self.rating} звезды"
 
+    class Meta:
+        verbose_name = "Отзыв"
+        verbose_name_plural = "Отзывы"
+
 
 # модель для хранения информации о корзине
 class Cart(models.Model):
@@ -51,3 +71,4 @@ class Cart(models.Model):
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity} (в корзине {self.user.username})"
+

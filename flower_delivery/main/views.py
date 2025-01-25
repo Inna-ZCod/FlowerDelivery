@@ -1,5 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .forms import OrderForm
+from django.contrib.auth.models import User
+from django.contrib.auth import login
+from .forms import OrderForm, UserRegistrationForm
 from .models import Product, Cart, Order
 
 
@@ -13,6 +15,25 @@ def catalog(request):
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)  # Получаем товар по ID или возвращаем 404
     return render(request, 'main/product_detail.html', {'product': product})
+
+
+# обработчик для регистрации
+def register(request):
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password'])
+            user.save()
+            login(request, user)
+            return redirect('connect_bot')  # Перенаправляем на привязку Telegram
+    else:
+        form = UserRegistrationForm()
+    return render(request, 'main/register.html', {'form': form})
+
+#  перенаправляем пользователя на страницу с кнопкой для привязки бота
+def connect_bot(request):
+    return render(request, 'main/connect_bot.html')
 
 
 # Функция для добавления в корзину
@@ -79,18 +100,37 @@ def checkout(request):
     if request.method == 'POST':
         form = OrderForm(request.POST)
         if form.is_valid():
+            # Проверяем данные пользователя в базе данных
+            user = User.objects.get(pk=request.user.pk)
+            telegram_chat_id = user.telegram_chat_id
+            print(f"Telegram ID для пользователя {user.username}: {telegram_chat_id}")
+
+            # Если Telegram ID пустой, выводим предупреждение
+            if not telegram_chat_id:
+                print(f"Внимание! Telegram ID для пользователя {user.username} отсутствует!")
+
+
+            # if hasattr(request.user, 'order_set') and request.user.order_set.exists():
+            #     telegram_chat_id = request.user.order_set.first().telegram_chat_id
+            #     print(f"Найден Telegram ID: {telegram_chat_id} для пользователя: {request.user.username}")
+            # else:
+            #     print(f"У пользователя {request.user.username} нет Telegram ID.")
+
             # Создаём заказ
             order = Order.objects.create(
                 user=request.user,
+                telegram_chat_id=telegram_chat_id,  # Привязываем Telegram ID
                 status='accepted',
                 total_price=sum(item.product.price * item.quantity for item in cart_items)
             )
+            print(
+                f"Создан заказ #{order.id} для пользователя {request.user.username} с Telegram ID: {telegram_chat_id}")
+
             order.products.set(item.product for item in cart_items)  # Связываем товары с заказом
             order.save()
 
             # Удаляем товары из корзины после оформления заказа
             cart_items.delete()
-
             # Перенаправляем на страницу подтверждения
             return redirect('order_success')
     else:
