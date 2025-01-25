@@ -16,5 +16,5 @@ urlpatterns = [
     path('register/', views.register, name='register'), # Регистрация
     path('connect-bot/', views.connect_bot, name='connect_bot'),  # Маршрут для привязки бота
     path('login/', auth_views.LoginView.as_view(template_name='main/login.html'), name='login'), # Авторизация
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'), # Выход из аккаунта
+    path('logout/', views.logout_user, name='logout'), # Выход из аккаунта
 ]

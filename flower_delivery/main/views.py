@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from .forms import OrderForm, UserRegistrationForm
 from .models import Product, Cart, Order
 
@@ -150,3 +150,9 @@ def user_orders(request):
 
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'main/orders.html', {'orders': orders})
+
+
+# Выход пользователя из аккаунта
+def logout_user(request):
+    logout(request)  # Завершаем сессию пользователя
+    return redirect('home')  # Перенаправляем на главную

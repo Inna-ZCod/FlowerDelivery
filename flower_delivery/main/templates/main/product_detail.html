@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ product.name }}</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+
+{% block content %}
     <h1>{{ product.name }}</h1>
     <img src="{{ product.image.url }}" alt="{{ product.name }}" width="400" height="400">
     <p>{{ product.description }}</p>
@@ -16,5 +15,4 @@
     </form>
 
     <a href="{% url 'catalog' %}">Вернуться в каталог</a>
-</body>
-</html>
+{% endblock %}

@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Подключение Telegram</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}Подключение Telegram{% endblock %}
+
+
+{% block content %}
     <h1>Подключение Telegram</h1>
     <p>Нажмите кнопку, чтобы подключить Telegram-бота:</p>
     <a href="https://t.me/FlowerDeliveryHelperBot?start={{ request.user.id }}">
         <button>Подключить Telegram</button>
     </a>
-</body>
-</html>
+{% endblock %}

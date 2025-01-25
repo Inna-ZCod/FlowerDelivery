@@ -1,10 +1,9 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Мои заказы</title>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}Мои заказы{% endblock %}
+
+
+{% block content %}
     <h1>Мои заказы</h1>
     <ul>
         {% for order in orders %}
@@ -18,5 +17,4 @@
         <p>У вас ещё нет заказов.</p>
         {% endfor %}
     </ul>
-</body>
-</html>
+{% endblock %}
