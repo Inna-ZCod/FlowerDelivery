@@ -5,8 +5,6 @@ from .forms import OrderForm, UserRegistrationForm
 from .models import Product, Cart, Order
 
 
-def home(request):
-    return render(request, 'main/home.html')
 
 def catalog(request):
     products = Product.objects.all()

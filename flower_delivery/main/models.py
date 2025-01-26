@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User, AbstractUser
-
+from django.db.models import Sum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -72,3 +72,7 @@ class Cart(models.Model):
     def __str__(self):
         return f"{self.product.name} x {self.quantity} (в корзине {self.user.username})"
 
+
+# Метод для подсчета общего количества товаров
+def get_cart_item_count(user):
+    return Cart.objects.filter(user=user).aggregate(Sum('quantity'))['quantity__sum'] or 0
