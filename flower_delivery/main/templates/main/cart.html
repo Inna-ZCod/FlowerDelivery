@@ -3,34 +3,42 @@
 {% block title %}Корзина{% endblock %}
 
 {% block content %}
-    <h1>Ваша корзина</h1>
-    <ul>
-        {% for item in cart_items %}
-        <li>
-            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="100">
-            <strong>{{ item.product.name }}</strong>
-            <p>Количество: {{ item.quantity }}</p>
-            <p>Цена за единицу: {{ item.product.price }} руб.</p>
-            <p>Итого: {{ item.total_price }} руб.</p>
+<h1>Ваша корзина</h1>
 
-            <!-- Кнопки для изменения количества -->
-            <form action="{% url 'update_cart' item.id %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" name="action" value="increase">+</button>
-                <button type="submit" name="action" value="decrease">-</button>
-            </form>
+<ul>
+    {% for item in cart_items %}
+    <div class="cart-item">
+        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="150" height="150">
+        <h3>{{ item.product.name }}</h3>
+        <p>Цена: {{ item.product.price }} руб.</p>
 
-            <!-- Кнопка для удаления товара -->
-            <form action="{% url 'delete_cart_item' item.id %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">Удалить</button>
-            </form>
-        </li>
-        {% endfor %}
-    </ul>
-    <h2>Общая стоимость: {{ total_price }} руб.</h2>
-    <br>
-    <a href="{% url 'checkout' %}">Оформить заказ</a>
-    <br>
-    <a href="{% url 'catalog' %}">Продолжить покупки</a>
+        <!-- Поля для ввода данных -->
+        <label for="address-{{ item.id }}">Адрес доставки:</label>
+        <input type="text" id="address-{{ item.id }}" name="address_{{ item.id }}" value="{{ item.address }}">
+
+        <label for="card_text-{{ item.id }}">Текст на открытке:</label>
+        <textarea id="card_text-{{ item.id }}" name="card_text_{{ item.id }}">{{ item.card_text }}</textarea>
+
+        <label for="signature-{{ item.id }}">Подпись:</label>
+        <input type="text" id="signature-{{ item.id }}" name="signature_{{ item.id }}" value="{{ item.signature }}">
+
+        <!-- Кнопка для удаления -->
+        <form method="post" action="{% url 'remove_from_cart' item.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Удалить</button>
+        </form>
+    </div>
+    {% endfor %}
+</ul>
+
+<h2>Общая стоимость: {{ total_price }} руб.</h2>
+
+<!-- Форма для подтверждения заказа -->
+<form method="post" action="{% url 'confirm_order' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">Подтвердить заказ</button>
+</form>
+
+<!-- Кнопка для продолжения покупок -->
+<a href="{% url 'catalog' %}" class="btn btn-secondary">Продолжить покупки</a>
 {% endblock %}

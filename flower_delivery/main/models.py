@@ -38,6 +38,9 @@ class Order(models.Model):
     total_price = models.DecimalField(max_digits=10, decimal_places=2)  # Общая цена
     created_at = models.DateTimeField(auto_now_add=True)  # Дата оформления
     telegram_chat_id = models.CharField(max_length=50, blank=True, null=True)  # Telegram ID пользователя
+    address = models.TextField(blank=True)  # Адрес доставки
+    card_text = models.TextField(blank=True)  # Текст на открытке
+    signature = models.CharField(max_length=255, blank=True)  # Подпись
 
     def __str__(self):
         return f"Заказ #{self.id} - {self.status}"
@@ -68,9 +71,13 @@ class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Пользователь, владелец корзины
     product = models.ForeignKey(Product, on_delete=models.CASCADE)  # Товар в корзине
     quantity = models.PositiveIntegerField(default=1)  # Количество одного и того же товара
+    address = models.TextField(blank=True, default="")  # Адрес доставки
+    card_text = models.TextField(blank=True, default="")  # Текст на открытке
+    signature = models.CharField(max_length=255, blank=True, default="")  # Подпись
 
     def __str__(self):
-        return f"{self.product.name} x {self.quantity} (в корзине {self.user.username})"
+        return f"{self.product.name} для {self.user.username}"
+#        return f"{self.product.name} x {self.quantity} (в корзине {self.user.username})"
 
 
 # Метод для подсчета общего количества товаров
