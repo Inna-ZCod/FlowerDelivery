@@ -1,7 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.contrib.auth import login, logout
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import login, logout, update_session_auth_hash
 from .forms import OrderForm, UserRegistrationForm
 from .models import Product, Cart, Order
 
@@ -156,9 +157,9 @@ def confirm_order(request):
     # Проверяем Telegram ID
     user = request.user
     telegram_chat_id = user.telegram_chat_id
-    if not telegram_chat_id:
-        messages.error(request, "Ваш Telegram не подключён. Подключите Telegram перед оформлением заказа.")
-        return redirect('cart')
+    # if not telegram_chat_id:
+    #     messages.error(request, "Ваш Telegram не подключён. Подключите Telegram перед оформлением заказа.")
+    #     return redirect('cart')
 
     # Создаём отдельный заказ для каждого товара в корзине
     for item in cart_items:
@@ -202,3 +203,18 @@ def user_orders(request):
 def logout_user(request):
     logout(request)  # Завершаем сессию пользователя
     return redirect('home')  # Перенаправляем на главную
+
+
+# Профиль пользователя
+def profile(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    password_form = PasswordChangeForm(request.user, request.POST or None)
+    if request.method == 'POST' and password_form.is_valid():
+        password_form.save()
+        update_session_auth_hash(request, password_form.user)  # Чтобы не разлогинивало
+        messages.success(request, "Пароль успешно изменён.")
+        return redirect('profile')
+
+    return render(request, 'main/profile.html', {'password_form': password_form})

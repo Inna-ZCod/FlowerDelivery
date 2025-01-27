@@ -7,4 +7,14 @@
     <h1>Спасибо за ваш заказ!</h1>
     <p>Мы свяжемся с вами в ближайшее время.</p>
     <a href="{% url 'catalog' %}">Вернуться в каталог</a>
+
+<!-- Кнопка подключения телеграм-бота -->
+    {% if not user.telegram_chat_id %}
+    <div class="alert alert-info">
+        Вы ещё не подключили Telegram для уведомлений.
+        <a class="btn btn-primary" href="https://t.me/FlowerDeliveryHelperBot?start={{ user.id }}" target="_blank" rel="noopener noreferrer">
+            Подключить Telegram
+        </a>
+    </div>
+    {% endif %}
 {% endblock %}

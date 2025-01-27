@@ -19,4 +19,5 @@ urlpatterns = [
     path('logout/', views.logout_user, name='logout'), # Выход из аккаунта
     path('cart/confirm/', views.confirm_order, name='confirm_order'), # Новый маршрут для подтверждения заказа
     path('cart/remove/<int:cart_item_id>/', views.delete_cart_item, name='remove_from_cart'), # Удаление товара из корзины
+    path('profile/', views.profile, name='profile'), # Профиль пользователя
 ]

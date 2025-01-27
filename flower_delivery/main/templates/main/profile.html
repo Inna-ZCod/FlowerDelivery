@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Профиль{% endblock %}
+{% block content %}
+<h1>Ваш профиль</h1>
+
+{% if not user.telegram_chat_id %}
+    <div class="alert alert-info">
+        Вы ещё не подключили Telegram.
+        <a class="btn btn-primary" href="https://t.me/FlowerDeliveryHelperBot?start={{ user.id }}" target="_blank" rel="noopener noreferrer">
+            Подключить Telegram
+        </a>
+    </div>
+{% endif %}
+
+<h2>Сменить пароль</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ password_form.as_p }}
+    <button type="submit" class="btn btn-success">Сохранить</button>
+</form>
+{% endblock %}

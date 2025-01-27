@@ -17,4 +17,15 @@
         <p>У вас ещё нет заказов.</p>
         {% endfor %}
     </ul>
+
+
+<!-- Кнопка подключения телеграм-бота -->
+    {% if not user.telegram_chat_id %}
+    <div class="alert alert-info">
+        Вы ещё не подключили Telegram для уведомлений.
+        <a class="btn btn-primary" href="https://t.me/FlowerDeliveryHelperBot?start={{ user.id }}" target="_blank" rel="noopener noreferrer">
+            Подключить Telegram
+        </a>
+    </div>
+    {% endif %}
 {% endblock %}
