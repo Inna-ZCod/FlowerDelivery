@@ -86,39 +86,51 @@ def confirm_order(request):
         messages.error(request, "Ваша корзина пуста. Добавьте товары, чтобы оформить заказ.")
         return redirect('cart')
 
+    # Проверяем, есть ли пустые адреса
     if request.method == "POST":
-        # Берем адреса из request.POST, а не из базы!
-        missing_addresses = [
-            item for item in cart_items
-            if not request.POST.get(f"address_{item.id}", "").strip()
-        ]
-
+        missing_addresses = [item for item in cart_items if not request.POST.get(f"address_{item.id}", "").strip()]
         if missing_addresses:
             messages.warning(request, "Укажите адрес доставки для всех товаров в корзине.")
             return redirect('cart')
 
-        # Если все адреса заполнены, формируем страницу подтверждения
+    # Формируем структуру заказа
+    order_summary = []
+    for item in cart_items:
+        address = request.POST.get(f"address_{item.id}", "").strip()
+        text = request.POST.get(f"card_text_{item.id}", "").strip()
+        signature = request.POST.get(f"signature_{item.id}", "").strip()
 
-        order_summary = [
-            {
-                "bouquet_name": item.product.name,
-                "delivery_address": request.POST.get(f"address_{item.id}", "").strip(),
-                "card_info": [
-                    ("Текст на открытке:", request.POST.get(f"card_text_{item.id}", "").strip())
-                    if request.POST.get(f"card_text_{item.id}", "").strip() else None,
-                    ("Подпись:", request.POST.get(f"signature_{item.id}", "").strip())
-                    if request.POST.get(f"signature_{item.id}", "").strip() else None,
-                ],
-                "price": item.product.price,
-            }
-            for item in cart_items
-        ]
-        return render(request, "main/cart_confirm.html", {
-            "order_summary": order_summary,
-            "total_price": sum(item.product.price for item in cart_items),
+        # Логика формирования текста открытки
+        if text and signature:
+            card_info = [
+                ("Текст на открытке:", text),
+                ("Подпись:", signature)
+            ]
+        elif text:
+            card_info = [
+                ("Текст на открытке:", text),
+                ("Подпись:", "Без подписи")
+            ]
+        elif signature:
+            card_info = [
+                ("Текст на открытке:", signature)  # Подпись становится текстом на открытке
+            ]
+        else:
+            card_info = [
+                ("Текст на открытке:", "Без открытки")
+            ]
+
+        order_summary.append({
+            "bouquet_name": item.product.name,
+            "delivery_address": address,
+            "card_info": card_info,  # Теперь передаем список пар
+            "price": item.product.price,
         })
 
-    return redirect('cart')
+    return render(request, "main/cart_confirm.html", {
+        "order_summary": order_summary,
+        "total_price": sum(item.product.price for item in cart_items),
+    })
 
 
 # Финальное оформление заказа

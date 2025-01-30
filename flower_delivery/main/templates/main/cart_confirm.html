@@ -12,15 +12,9 @@
             <strong>Букет:</strong> {{ item.bouquet_name }}<br>
             <strong>Адрес доставки:</strong> {{ item.delivery_address }}<br>
 
-            {% if item.card_info and item.card_info|length > 0 %}
-                {% for info in item.card_info %}
-                    {% if info and info|length == 2 %}
-                        <strong>{{ info.0 }}</strong> {{ info.1 }}<br>
-                    {% endif %}
-                {% endfor %}
-            {% else %}
-                <strong>Текст на открытке:</strong> Без открытки<br>
-            {% endif %}
+            {% for label, value in item.card_info %}
+                <strong>{{ label }}</strong> {{ value }}<br>
+            {% endfor %}
 
             <strong>Цена:</strong> {{ item.price }} руб.<br>
         </li>
