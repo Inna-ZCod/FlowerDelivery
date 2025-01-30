@@ -70,16 +70,9 @@ class Review(models.Model):
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Пользователь, владелец корзины
     product = models.ForeignKey(Product, on_delete=models.CASCADE)  # Товар в корзине
-    quantity = models.PositiveIntegerField(default=1)  # Количество одного и того же товара
     address = models.TextField(blank=True, default="")  # Адрес доставки
     card_text = models.TextField(blank=True, default="")  # Текст на открытке
     signature = models.CharField(max_length=255, blank=True, default="")  # Подпись
 
     def __str__(self):
         return f"{self.product.name} для {self.user.username}"
-#        return f"{self.product.name} x {self.quantity} (в корзине {self.user.username})"
-
-
-# Метод для подсчета общего количества товаров
-def get_cart_item_count(user):
-    return Cart.objects.filter(user=user).aggregate(Sum('quantity'))['quantity__sum'] or 0

@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
+from main.views import confirm_order, finalize_order
 
 urlpatterns = [
     path('', views.catalog, name='home'),  # Главная страница
@@ -20,4 +21,5 @@ urlpatterns = [
     path('cart/confirm/', views.confirm_order, name='confirm_order'), # Новый маршрут для подтверждения заказа
     path('cart/remove/<int:cart_item_id>/', views.delete_cart_item, name='remove_from_cart'), # Удаление товара из корзины
     path('profile/', views.profile, name='profile'), # Профиль пользователя
+    path('order/finalize/', finalize_order, name='finalize_order'), # Финальное оформление заказа
 ]

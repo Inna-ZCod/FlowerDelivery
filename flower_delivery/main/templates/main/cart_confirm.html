@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Подтверждение заказа{% endblock %}
+
+
+{% block content %}
+<h2>Подтвердите ваш заказ</h2>
+
+<ul>
+    {% for item in order_summary %}
+        <li>
+            <strong>Букет:</strong> {{ item.bouquet_name }}<br>
+            <strong>Адрес доставки:</strong> {{ item.delivery_address }}<br>
+
+            {% if item.card_info and item.card_info|length > 0 %}
+                {% for info in item.card_info %}
+                    {% if info and info|length == 2 %}
+                        <strong>{{ info.0 }}</strong> {{ info.1 }}<br>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <strong>Текст на открытке:</strong> Без открытки<br>
+            {% endif %}
+
+            <strong>Цена:</strong> {{ item.price }} руб.<br>
+        </li>
+    {% endfor %}
+</ul>
+
+<p><strong>Общая сумма:</strong> {{ total_price }} руб.</p>
+
+<form method="post" action="{% url 'finalize_order' %}">
+    {% csrf_token %}
+    <button type="submit">Все верно, оформить заказ</button>
+</form>
+<a href="{% url 'cart' %}" class="btn btn-secondary">Вернуться назад</a>
+{% endblock %}

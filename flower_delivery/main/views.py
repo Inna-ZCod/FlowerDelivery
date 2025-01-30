@@ -61,23 +61,9 @@ def cart(request):
 
     cart_items = Cart.objects.filter(user=request.user)  # Получаем товары в корзине
     for item in cart_items:
-        item.total_price = item.product.price * item.quantity  # Вычисляем "Итого" для каждого товара
-    total_price = sum(item.product.price * item.quantity for item in cart_items)  # Общая стоимость
+        item.total_price = item.product.price  # "Итого" для каждой позиции — это цена самого товара
+    total_price = sum(item.product.price for item in cart_items)  # Общая стоимость корзины
     return render(request, 'main/cart.html', {'cart_items': cart_items, 'total_price': total_price})
-
-
-# # Увеличение или уменьшение количества товара в корзине
-# def update_cart(request, cart_item_id):
-#     cart_item = get_object_or_404(Cart, id=cart_item_id, user=request.user)
-#     action = request.POST.get('action')
-#
-#     if action == 'increase':
-#         cart_item.quantity += 1
-#     elif action == 'decrease' and cart_item.quantity > 1:
-#         cart_item.quantity -= 1
-#
-#     cart_item.save()
-#     return redirect('cart')
 
 
 # Удаление товара из корзины
@@ -86,61 +72,7 @@ def delete_cart_item(request, cart_item_id):
     cart_item.delete()
     return redirect('cart')
 
-# # ОБНОВЛЕННАЯ функция удаление товара из корзины
-# def remove_from_cart(request, cart_item_id):
-#     if not request.user.is_authenticated:
-#         return redirect('login')
-#
-#     cart_item = get_object_or_404(Cart, id=cart_item_id, user=request.user)
-#     cart_item.delete()
-#     messages.success(request, f"Товар {cart_item.product.name} удалён из корзины.")
-#     return redirect('cart')
 
-
-
-# # Оформление заказа
-# def checkout(request):
-#     if not request.user.is_authenticated:
-#         return redirect('login')
-#
-#     cart_items = Cart.objects.filter(user=request.user)
-#     if not cart_items:
-#         return redirect('cart')  # Если корзина пуста, отправляем пользователя назад
-#
-#     if request.method == 'POST':
-#         form = OrderForm(request.POST)
-#         if form.is_valid():
-#             # Проверяем данные пользователя в базе данных
-#             user = User.objects.get(pk=request.user.pk)
-#             telegram_chat_id = user.telegram_chat_id
-#             print(f"Telegram ID для пользователя {user.username}: {telegram_chat_id}")
-#
-#             # Если Telegram ID пустой, выводим предупреждение
-#             if not telegram_chat_id:
-#                 print(f"Внимание! Telegram ID для пользователя {user.username} отсутствует!")
-#
-#
-#             # Создаём заказ
-#             order = Order.objects.create(
-#                 user=request.user,
-#                 telegram_chat_id=telegram_chat_id,  # Привязываем Telegram ID
-#                 status='accepted',
-#                 total_price=sum(item.product.price * item.quantity for item in cart_items)
-#             )
-#             print(
-#                 f"Создан заказ #{order.id} для пользователя {request.user.username} с Telegram ID: {telegram_chat_id}")
-#
-#             order.products.set(item.product for item in cart_items)  # Связываем товары с заказом
-#             order.save()
-#
-#             # Удаляем товары из корзины после оформления заказа
-#             cart_items.delete()
-#             # Перенаправляем на страницу подтверждения
-#             return redirect('order_success')
-#     else:
-#         form = OrderForm()
-#
-#     return render(request, 'main/checkout.html', {'form': form, 'cart_items': cart_items})
 
 
 # Новое представление, которое будет обрабатывать нажатие кнопки "Подтвердить заказ" на странице корзины
@@ -154,35 +86,76 @@ def confirm_order(request):
         messages.error(request, "Ваша корзина пуста. Добавьте товары, чтобы оформить заказ.")
         return redirect('cart')
 
-    # Проверяем Telegram ID
-    user = request.user
-    telegram_chat_id = user.telegram_chat_id
-    # if not telegram_chat_id:
-    #     messages.error(request, "Ваш Telegram не подключён. Подключите Telegram перед оформлением заказа.")
-    #     return redirect('cart')
+    if request.method == "POST":
+        # Берем адреса из request.POST, а не из базы!
+        missing_addresses = [
+            item for item in cart_items
+            if not request.POST.get(f"address_{item.id}", "").strip()
+        ]
 
-    # Создаём отдельный заказ для каждого товара в корзине
-    for item in cart_items:
-        order = Order.objects.create(
-            user=user,
-            telegram_chat_id=telegram_chat_id,
-            status='accepted',
-            total_price=item.product.price,  # Цена одного букета
-            address=item.address,
-            card_text=item.card_text,
-            signature=item.signature,
-        )
-        # Устанавливаем связь между заказом и продуктом
-        order.products.set([item.product])
-        order.save()
+        if missing_addresses:
+            messages.warning(request, "Укажите адрес доставки для всех товаров в корзине.")
+            return redirect('cart')
 
-    print(f"Заказы успешно созданы для пользователя {user.username}.")
+        # Если все адреса заполнены, формируем страницу подтверждения
 
-    # Очищаем корзину
-    cart_items.delete()
+        order_summary = [
+            {
+                "bouquet_name": item.product.name,
+                "delivery_address": request.POST.get(f"address_{item.id}", "").strip(),
+                "card_info": [
+                    ("Текст на открытке:", request.POST.get(f"card_text_{item.id}", "").strip())
+                    if request.POST.get(f"card_text_{item.id}", "").strip() else None,
+                    ("Подпись:", request.POST.get(f"signature_{item.id}", "").strip())
+                    if request.POST.get(f"signature_{item.id}", "").strip() else None,
+                ],
+                "price": item.product.price,
+            }
+            for item in cart_items
+        ]
+        return render(request, "main/cart_confirm.html", {
+            "order_summary": order_summary,
+            "total_price": sum(item.product.price for item in cart_items),
+        })
 
-    # Перенаправляем на страницу "Заказ оформлен"
-    return redirect('order_success')
+    return redirect('cart')
+
+
+# Финальное оформление заказа
+def finalize_order(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    cart_items = Cart.objects.filter(user=request.user)
+    if not cart_items:
+        messages.error(request, "Ваша корзина пуста. Добавьте товары, чтобы оформить заказ.")
+        return redirect('cart')
+
+    if request.method == "POST":
+        user = request.user
+        telegram_chat_id = user.telegram_chat_id
+
+        for item in cart_items:
+            order = Order.objects.create(
+                user=user,
+                telegram_chat_id=telegram_chat_id,
+                status='accepted',
+                total_price=item.product.price,
+                address=item.address,
+                card_text=item.card_text,
+                signature=item.signature,
+            )
+            order.products.set([item.product])
+            order.save()
+
+        # Очищаем корзину
+        cart_items.delete()
+
+        # Перенаправляем пользователя на "Мои заказы"
+        return redirect('user_orders')
+
+    return redirect('cart')
+
 
 
 # Подтвердение заказа
