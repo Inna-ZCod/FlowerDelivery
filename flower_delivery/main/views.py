@@ -173,10 +173,10 @@ def finalize_order(request):
     telegram_chat_id = user.telegram_chat_id
 
     for item in cart_items:
-        print(f"📌 Оформляем заказ для {user.username}: {item.product.name}")
-        print(f"➡ Адрес: {item.address}")
-        print(f"➡ Текст открытки: {item.card_text}")
-        print(f"➡ Подпись: {item.signature}")
+        # print(f"📌 Оформляем заказ для {user.username}: {item.product.name}")
+        # print(f"➡ Адрес: {item.address}")
+        # print(f"➡ Текст открытки: {item.card_text}")
+        # print(f"➡ Подпись: {item.signature}")
 
         order = Order.objects.create(
             user=user,
@@ -188,8 +188,12 @@ def finalize_order(request):
             signature=item.signature,
         )
 
+        # Сохраняем заказ
+        order.products.set([item.product])
+        order.save()
+
         # Формируем сообщение для Telegram
-        message_text = f"🛍 Ваш заказ подтверждён!\n\n"
+        message_text = f"🛍 *Ваш заказ №{order.id} подтверждён!*\n\n"
         for item in cart_items:
             message_text += f"🌸 *Букет:* {item.product.name}\n"
             message_text += f"📍 *Адрес доставки:* {item.address}\n"
@@ -204,13 +208,16 @@ def finalize_order(request):
                 message_text += f"💌 *Текст на открытке:* Без открытки\n"
 
             message_text += f"💰 *Цена:* {item.product.price} руб.\n"
+            message_text += f"📅 *Дата заказа:* {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
             message_text += "------------------------\n"
 
         message_text += "📦 Ожидайте дальнейшей информации о статусе заказа!\n"
 
-        # Сохраняем заказ
-        order.products.set([item.product])
-        order.save()
+
+        # # Отладочный вывод
+        # print(f"📦 Заказ #{order.id} создан для {user.username}")
+        # print(f"📋 Продукты в заказе: {order.products.all()}")  # Проверяем, есть ли букет в заказе
+        # print(f"💐 Должен быть добавлен: {item.product.name}")  # Проверяем, какой букет должен был добавиться
 
 
         # Отправляем сообщение пользователю, если у него есть Telegram ID
@@ -249,6 +256,8 @@ def user_orders(request):
 
     formatted_orders = []
     for order in orders:
+        print(f"🔍 Проверяем заказ #{order.id}")
+        print(f"📋 Продукты в заказе: {order.products.all()}")  # Отобразим все продукты
         # Формируем корректное сообщение об открытке
         if order.card_text and order.signature:
             card_info = [
@@ -272,8 +281,8 @@ def user_orders(request):
         formatted_orders.append({
             "order_id": order.id,
             "status": status_translation.get(order.status, order.status),  # Переводим статус
-            "created_at": order.created_at.strftime("%d %m %Y %H:%M"),  # Форматируем дату
-            "bouquet_name": order.products.first().name,  # Название букета
+            "created_at": order.created_at.strftime("%d.%m.%Y %H:%M"),  # Форматируем дату
+            "bouquet_name": order.products.first().name if order.products.exists() else "Не указан",  # Название букета
             "delivery_address": order.address if order.address else "Адрес не указан",
             "card_info": card_info,  # Открытка и подпись
             "price": order.total_price,  # Цена
