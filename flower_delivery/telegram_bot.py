@@ -10,11 +10,20 @@ django.setup()
 from decouple import config
 import telebot
 from main.models import User, Order
+import requests  # Библиотека для HTTP-запросов
 
 
 # Токен бота
 BOT_TOKEN = config("TELEGRAM_BOT_TOKEN")
 bot = telebot.TeleBot(BOT_TOKEN)
+
+
+def send_telegram_message(chat_id, text):
+    """Отправляет сообщение в Telegram"""
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
+    response = requests.post(url, data=payload)
+    return response.json()  # Можно использовать для отладки
 
 
 # Команда /start
