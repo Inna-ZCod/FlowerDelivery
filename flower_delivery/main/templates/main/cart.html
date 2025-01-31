@@ -28,11 +28,11 @@
             <label for="address_{{ item.id }}">Адрес доставки:</label>
             <input type="text" id="address_{{ item.id }}" name="address_{{ item.id }}" value="{{ item.address }}">
 
-            <label for="card_text-{{ item.id }}">Текст на открытке:</label>
-            <textarea id="card_text-{{ item.id }}" name="card_text_{{ item.id }}">{{ item.card_text }}</textarea>
+            <label for="card_text_{{ item.id }}">Текст на открытке:</label>
+            <textarea id="card_text_{{ item.id }}" name="card_text_{{ item.id }}">{{ item.card_text }}</textarea>
 
-            <label for="signature-{{ item.id }}">Подпись:</label>
-            <input type="text" id="signature-{{ item.id }}" name="signature_{{ item.id }}" value="{{ item.signature }}">
+            <label for="signature_{{ item.id }}">Подпись:</label>
+            <input type="text" id="signature_{{ item.id }}" name="signature_{{ item.id }}" value="{{ item.signature }}">
 
             <!-- Кнопка удаления теперь вне основной формы -->
             <button type="submit" formaction="{% url 'remove_from_cart' item.id %}" formmethod="post" class="btn btn-danger">

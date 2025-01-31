@@ -5,7 +5,26 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import login, logout, update_session_auth_hash
 from .forms import OrderForm, UserRegistrationForm
 from .models import Product, Cart, Order
+from django import template
 
+# функции для извлечения текста открытки и подписи
+register = template.Library()
+
+@register.filter
+def get_card_text(card_info):
+    """Извлекает текст на открытке, если он есть"""
+    for label, value in card_info:
+        if label == "Текст на открытке:":
+            return value
+    return ""
+
+@register.filter
+def get_signature(card_info):
+    """Извлекает подпись, если она есть"""
+    for label, value in card_info:
+        if label == "Подпись:":
+            return value
+    return ""
 
 
 def catalog(request):
@@ -86,19 +105,25 @@ def confirm_order(request):
         messages.error(request, "Ваша корзина пуста. Добавьте товары, чтобы оформить заказ.")
         return redirect('cart')
 
-    # Проверяем, есть ли пустые адреса
     if request.method == "POST":
         missing_addresses = [item for item in cart_items if not request.POST.get(f"address_{item.id}", "").strip()]
         if missing_addresses:
             messages.warning(request, "Укажите адрес доставки для всех товаров в корзине.")
             return redirect('cart')
 
-    # Формируем структуру заказа
+        # ✅ Сохраняем введенные данные в Cart
+        for item in cart_items:
+            item.address = request.POST.get(f"address_{item.id}", "").strip()
+            item.card_text = request.POST.get(f"card_text_{item.id}", "").strip()
+            item.signature = request.POST.get(f"signature_{item.id}", "").strip()
+            item.save()
+
+    # ✅ Формируем структуру заказа для отображения на странице подтверждения
     order_summary = []
     for item in cart_items:
-        address = request.POST.get(f"address_{item.id}", "").strip()
-        text = request.POST.get(f"card_text_{item.id}", "").strip()
-        signature = request.POST.get(f"signature_{item.id}", "").strip()
+        address = item.address  # Теперь берем из Cart, а не из POST
+        text = item.card_text
+        signature = item.signature
 
         # Логика формирования текста открытки
         if text and signature:
@@ -123,7 +148,7 @@ def confirm_order(request):
         order_summary.append({
             "bouquet_name": item.product.name,
             "delivery_address": address,
-            "card_info": card_info,  # Теперь передаем список пар
+            "card_info": card_info,  # ✅ Теперь передаем список пар
             "price": item.product.price,
         })
 
@@ -143,30 +168,30 @@ def finalize_order(request):
         messages.error(request, "Ваша корзина пуста. Добавьте товары, чтобы оформить заказ.")
         return redirect('cart')
 
-    if request.method == "POST":
-        user = request.user
-        telegram_chat_id = user.telegram_chat_id
+    user = request.user
+    telegram_chat_id = user.telegram_chat_id
 
-        for item in cart_items:
-            order = Order.objects.create(
-                user=user,
-                telegram_chat_id=telegram_chat_id,
-                status='accepted',
-                total_price=item.product.price,
-                address=item.address,
-                card_text=item.card_text,
-                signature=item.signature,
-            )
-            order.products.set([item.product])
-            order.save()
+    for item in cart_items:
+        print(f"📌 Оформляем заказ для {user.username}: {item.product.name}")
+        print(f"➡ Адрес: {item.address}")
+        print(f"➡ Текст открытки: {item.card_text}")
+        print(f"➡ Подпись: {item.signature}")
 
-        # Очищаем корзину
-        cart_items.delete()
+        order = Order.objects.create(
+            user=user,
+            telegram_chat_id=telegram_chat_id,
+            status='accepted',
+            total_price=item.product.price,
+            address=item.address,  # ✅ Теперь берем данные из Cart!
+            card_text=item.card_text,
+            signature=item.signature,
+        )
+        order.products.set([item.product])
+        order.save()
 
-        # Перенаправляем пользователя на "Мои заказы"
-        return redirect('user_orders')
+    cart_items.delete()  # ✅ Очищаем корзину
 
-    return redirect('cart')
+    return redirect('user_orders')  # Перенаправляем на "Мои заказы"
 
 
 
@@ -181,7 +206,48 @@ def user_orders(request):
         return redirect('login')
 
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'main/orders.html', {'orders': orders})
+
+    # Перевод статусов на русский
+    status_translation = {
+        "accepted": "Принят",
+        "processing": "В сборке",
+        "delivering": "В пути",
+        "delivered": "Доставлен"
+    }
+
+    formatted_orders = []
+    for order in orders:
+        # Формируем корректное сообщение об открытке
+        if order.card_text and order.signature:
+            card_info = [
+                ("Текст на открытке:", order.card_text),
+                ("Подпись:", order.signature)
+            ]
+        elif order.card_text:
+            card_info = [
+                ("Текст на открытке:", order.card_text),
+                ("Подпись:", "Без подписи")
+            ]
+        elif order.signature:
+            card_info = [
+                ("Текст на открытке:", order.signature)
+            ]
+        else:
+            card_info = [
+                ("Текст на открытке:", "Без открытки")
+            ]
+
+        formatted_orders.append({
+            "order_id": order.id,
+            "status": status_translation.get(order.status, order.status),  # Переводим статус
+            "created_at": order.created_at.strftime("%d %m %Y %H:%M"),  # Форматируем дату
+            "bouquet_name": order.products.first().name,  # Название букета
+            "delivery_address": order.address if order.address else "Адрес не указан",
+            "card_info": card_info,  # Открытка и подпись
+            "price": order.total_price,  # Цена
+        })
+
+    return render(request, 'main/orders.html', {'orders': formatted_orders})
 
 
 # Выход пользователя из аккаунта

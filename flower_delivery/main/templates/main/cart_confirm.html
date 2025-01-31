@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 
 {% block title %}Подтверждение заказа{% endblock %}
 
@@ -25,6 +26,13 @@
 
 <form method="post" action="{% url 'finalize_order' %}">
     {% csrf_token %}
+
+    {% for item in order_summary %}
+        <input type="hidden" name="address_{{ item.id }}" value="{{ item.delivery_address }}">
+        <input type="hidden" name="card_text_{{ item.id }}" value="{{ item.card_info|get_card_text }}">
+        <input type="hidden" name="signature_{{ item.id }}" value="{{ item.card_info|get_signature }}">
+    {% endfor %}
+
     <button type="submit">Все верно, оформить заказ</button>
 </form>
 <a href="{% url 'cart' %}" class="btn btn-secondary">Вернуться назад</a>
