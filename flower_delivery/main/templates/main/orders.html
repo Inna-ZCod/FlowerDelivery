@@ -19,6 +19,17 @@
         {% endfor %}
 
         <p><strong>Цена:</strong> {{ order.price }} руб.</p>
+
+
+        {% if order.status == "Доставлен" %}
+            {% if not order.has_review %}
+                <a href="{% url 'leave_review' order.order_id %}" class="btn btn-primary">Оставить отзыв</a>
+            {% else %}
+                <p class="text-success"><strong>Отзыв уже оставлен</strong></p>
+            {% endif %}
+        {% endif %}
+
+
     </div>
     <hr>
 {% endfor %}

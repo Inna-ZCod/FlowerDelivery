@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
+from .models import Review
+
 
 # Форма для регистрации
 class UserRegistrationForm(forms.ModelForm):
@@ -28,3 +30,20 @@ class OrderForm(forms.Form):
         widget=forms.Textarea,
         required=False
     )
+
+
+# Форма для отзыва
+class ReviewForm(forms.ModelForm):
+    rating = forms.ChoiceField(
+        choices=[(i, f"{i} ★") for i in range(1, 6)],  # Оценка от 1 до 5 звездочек
+        widget=forms.Select(attrs={"class": "form-control"}),
+        label = "Оценка"  # ✅ Заменяем "Rating" на "Оценка"
+    )
+    text = forms.CharField(
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+        label="Текст отзыва"
+    )
+
+    class Meta:
+        model = Review
+        fields = ["rating", "text"]

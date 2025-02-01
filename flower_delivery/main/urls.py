@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
-from main.views import confirm_order, finalize_order
+from main.views import confirm_order, finalize_order, leave_review
 
 urlpatterns = [
     path('', views.catalog, name='home'),  # Главная страница
@@ -9,8 +9,6 @@ urlpatterns = [
     path('product/<int:product_id>/', views.product_detail, name='product_detail'),  # Детали товара
     path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'), # Добавление товара в корзину
     path('cart/', views.cart, name='cart'), # Просмотр корзины
-#    path('checkout/', views.checkout, name='checkout'), # Оформление заказа
-#    path('cart/update/<int:cart_item_id>/', views.update_cart, name='update_cart'),
     path('cart/delete/<int:cart_item_id>/', views.delete_cart_item, name='delete_cart_item'),
     path('order/success/', views.order_success, name='order_success'), # Подтверждение заказа
     path('orders/', views.user_orders, name='user_orders'), # Отображение заказов
@@ -22,4 +20,5 @@ urlpatterns = [
     path('cart/remove/<int:cart_item_id>/', views.delete_cart_item, name='remove_from_cart'), # Удаление товара из корзины
     path('profile/', views.profile, name='profile'), # Профиль пользователя
     path('order/finalize/', finalize_order, name='finalize_order'), # Финальное оформление заказа
+    path("order/<int:order_id>/review/", leave_review, name="leave_review"), # Отзывы
 ]

@@ -16,4 +16,23 @@
 
     <a href="{% url 'catalog' %}">Вернуться в каталог</a>
     <a href="{% url 'cart' %}" class="btn btn-primary">Перейти в корзину</a>
+
+
+
+    <h2>Отзывы</h2>
+    {% if reviews %}
+        <ul>
+            {% for review in reviews %}
+                <li>
+                    <strong>{{ review.user.username }}</strong> - <span>{{ review.created_at|date:"d.m.Y H:i" }}</span><br>
+                    <strong>Оценка:</strong> {{ review.rating }} ★<br>
+                    <p>{{ review.text }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Отзывов пока нет. Будьте первым!</p>
+    {% endif %}
+
+
 {% endblock %}

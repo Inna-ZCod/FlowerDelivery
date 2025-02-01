@@ -1,12 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import login, logout, update_session_auth_hash
-from .forms import OrderForm, UserRegistrationForm
-from .models import Product, Cart, Order
+from .forms import OrderForm, UserRegistrationForm, ReviewForm
+from .models import Product, Cart, Order, Review
 from django import template
 from telegram_bot import send_telegram_message
+
+
 
 # функции для извлечения текста открытки и подписи
 register = template.Library()
@@ -32,9 +35,12 @@ def catalog(request):
     products = Product.objects.all()
     return render(request, 'main/catalog.html', {'products': products})
 
+
+# Один продукт = один букет
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)  # Получаем товар по ID или возвращаем 404
-    return render(request, 'main/product_detail.html', {'product': product})
+    reviews = Review.objects.filter(product=product).order_by("-created_at")  # Получаем все отзывы к продукту
+    return render(request, 'main/product_detail.html', {"product": product, "reviews": reviews})
 
 
 # обработчик для регистрации
@@ -244,7 +250,7 @@ def user_orders(request):
     if not request.user.is_authenticated:
         return redirect('login')
 
-    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    orders = Order.objects.filter(user=request.user).select_related("review").order_by('-created_at')
 
     # Перевод статусов на русский
     status_translation = {
@@ -256,8 +262,6 @@ def user_orders(request):
 
     formatted_orders = []
     for order in orders:
-        print(f"🔍 Проверяем заказ #{order.id}")
-        print(f"📋 Продукты в заказе: {order.products.all()}")  # Отобразим все продукты
         # Формируем корректное сообщение об открытке
         if order.card_text and order.signature:
             card_info = [
@@ -286,6 +290,7 @@ def user_orders(request):
             "delivery_address": order.address if order.address else "Адрес не указан",
             "card_info": card_info,  # Открытка и подпись
             "price": order.total_price,  # Цена
+            "has_review": hasattr(order, "review")  # Проверяем, есть ли у заказа отзыв
         })
 
     return render(request, 'main/orders.html', {'orders': formatted_orders})
@@ -310,3 +315,27 @@ def profile(request):
         return redirect('profile')
 
     return render(request, 'main/profile.html', {'password_form': password_form})
+
+
+# Отзывы - обработка формы для отзыва
+@login_required
+def leave_review(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+
+    # Проверяем, есть ли уже отзыв к этому заказу
+    if hasattr(order, "review"):
+        return redirect("product", product_id=order.products.first().id)  # Если отзыв уже есть, возвращаем в заказы
+
+    if request.method == "POST":
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user
+            review.product = order.products.first()  # Связываем с продуктом
+            review.order = order  # Связываем с заказом
+            review.save()
+            return redirect("product_detail", product_id=order.products.first().id)  # Перенаправляем на страницу букета
+    else:
+        form = ReviewForm()
+
+    return render(request, "main/leave_review.html", {"form": form, "order": order})
