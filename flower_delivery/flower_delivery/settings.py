@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
+
+TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN")
+SITE_URL = config("SITE_URL", default="http://127.0.0.1:8000")
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -132,3 +137,16 @@ LOGIN_REDIRECT_URL = '/catalog/'  # Перенаправление на стра
 LOGOUT_REDIRECT_URL = '/'  # Перенаправление на главную страницу
 
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
+    },
+}

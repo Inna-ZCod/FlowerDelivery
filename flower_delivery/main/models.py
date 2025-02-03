@@ -36,53 +36,23 @@ class Order(models.Model):
         ('on_the_way', 'В пути'),
         ('delivered', 'Доставлен'),
     ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Пользователь
-    products = models.ManyToManyField(Product)  # Букеты
+    products = models.ManyToManyField(Product)  # Связь с букетами
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='accepted')  # Статус заказа
     total_price = models.DecimalField(max_digits=10, decimal_places=2)  # Общая цена
-    created_at = models.DateTimeField(auto_now_add=True)  # Дата оформления
+    created_at = models.DateTimeField(auto_now_add=True)  # Дата оформления заказа
     telegram_chat_id = models.CharField(max_length=50, blank=True, null=True)  # Telegram ID пользователя
     address = models.TextField(blank=True)  # Адрес доставки
     card_text = models.TextField(blank=True)  # Текст на открытке
     signature = models.CharField(max_length=255, blank=True)  # Подпись
 
     def __str__(self):
-        return f"Заказ #{self.id} - {self.status}"
+        return f"Заказ #{self.id} - {self.user}"
 
     class Meta:
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
-
-    # Метод для отслеживания изменения статуса заказа
-    def save(self, *args, **kwargs):
-        # Проверяем, существует ли заказ, чтобы сравнить старый и новый статус
-        if self.pk:
-            try:
-                old_order = Order.objects.get(pk=self.pk)
-            except Order.DoesNotExist:
-                old_order = None
-
-            if old_order and old_order.status != self.status:
-                # ✅ Откладываем импорт `send_telegram_message`, чтобы избежать циклического импорта
-                from telegram_bot import send_telegram_message
-
-                # Формируем сообщение о смене статуса
-                message_text = (
-                    f"📢 Обновление статуса заказа №{self.id}!\n\n"
-                    f"🔄 Новый статус: *{self.get_status_display()}*\n"
-                    f"📅 Дата заказа: {self.created_at.strftime('%d.%m.%Y %H:%M')}\n"
-                    f"💐 Букет: {self.products.first().name if self.products.exists() else 'Не указан'}\n"
-                    f"💰 Цена: {self.total_price} руб.\n\n"
-                    "🔔 Ожидайте дальнейшей информации!"
-                )
-
-                if self.telegram_chat_id:
-                    send_telegram_message(self.telegram_chat_id, message_text)
-
-        super().save(*args, **kwargs)  # Сохранение заказа
-
-    def __str__(self):
-        return f"Заказ #{self.id} - {self.user}"
 
 
 # Модель отзыва

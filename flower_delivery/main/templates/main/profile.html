@@ -3,13 +3,14 @@
 {% block content %}
 <h1>Ваш профиль</h1>
 
-{% if not user.telegram_chat_id %}
-    <div class="alert alert-info">
-        Вы ещё не подключили Telegram.
-        <a class="btn btn-primary" href="https://t.me/FlowerDeliveryHelperBot?start={{ user.id }}" target="_blank" rel="noopener noreferrer">
-            Подключить Telegram
-        </a>
-    </div>
+<p><strong>Имя пользователя:</strong> {{ user.username }}</p>
+
+{% if user.telegram_chat_id %}
+    <p>✅ Вы подключены к Telegram-боту.</p>
+    <p><a href="https://t.me/FlowerDeliveryHelperBot" class="btn btn-info">Перейти в Telegram-бот</a></p>
+{% else %}
+    <p>🔔 Вы еще не подключили Telegram-бот.</p>
+    <a href="{% url 'connect_bot' %}" class="btn btn-primary">Подключить Telegram-бот</a>
 {% endif %}
 
 <h2>Сменить пароль</h2>

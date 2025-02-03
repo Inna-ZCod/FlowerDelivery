@@ -39,7 +39,7 @@ def catalog(request):
 # Один продукт = один букет
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)  # Получаем товар по ID или возвращаем 404
-    reviews = Review.objects.filter(product=product).order_by("-created_at")  # Получаем все отзывы к продукту
+    reviews = Review.objects.filter(product=product).order_by('-created_at')  # ✅ Берем все отзывы, а не только текущего пользователя
     return render(request, 'main/product_detail.html', {"product": product, "reviews": reviews})
 
 
@@ -179,11 +179,6 @@ def finalize_order(request):
     telegram_chat_id = user.telegram_chat_id
 
     for item in cart_items:
-        # print(f"📌 Оформляем заказ для {user.username}: {item.product.name}")
-        # print(f"➡ Адрес: {item.address}")
-        # print(f"➡ Текст открытки: {item.card_text}")
-        # print(f"➡ Подпись: {item.signature}")
-
         order = Order.objects.create(
             user=user,
             telegram_chat_id=telegram_chat_id,
@@ -220,12 +215,6 @@ def finalize_order(request):
         message_text += "📦 Ожидайте дальнейшей информации о статусе заказа!\n"
 
 
-        # # Отладочный вывод
-        # print(f"📦 Заказ #{order.id} создан для {user.username}")
-        # print(f"📋 Продукты в заказе: {order.products.all()}")  # Проверяем, есть ли букет в заказе
-        # print(f"💐 Должен быть добавлен: {item.product.name}")  # Проверяем, какой букет должен был добавиться
-
-
         # Отправляем сообщение пользователю, если у него есть Telegram ID
         if telegram_chat_id:
             response = send_telegram_message(telegram_chat_id, message_text)
@@ -255,8 +244,8 @@ def user_orders(request):
     # Перевод статусов на русский
     status_translation = {
         "accepted": "Принят",
-        "processing": "В сборке",
-        "delivering": "В пути",
+        "assembling": "В сборке",
+        "on_the_way": "В пути",
         "delivered": "Доставлен"
     }
 
@@ -324,7 +313,7 @@ def leave_review(request, order_id):
 
     # Проверяем, есть ли уже отзыв к этому заказу
     if hasattr(order, "review"):
-        return redirect("product", product_id=order.products.first().id)  # Если отзыв уже есть, возвращаем в заказы
+        return redirect("product_detail", product_id=order.products.first().id)  # Если отзыв уже есть, возвращаем в заказы
 
     if request.method == "POST":
         form = ReviewForm(request.POST)
