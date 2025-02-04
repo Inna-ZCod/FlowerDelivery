@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>📊 Отчёты администратора</h2>
+
+<p>Общее количество заказов: <strong>{{ total_orders }}</strong></p>
+
+
+<h3>Заказы по статусам:</h3>
+<table>
+    <tr>
+        <th>Статус</th>
+        <th>Количество</th>
+    </tr>
+    {% for status, count in orders_by_status.items %}
+    <tr>
+        <td>{{ status }}</td>
+        <td>{{ count }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+
+<h3>Количество заказов по пользователям</h3>
+<table border="1">
+    <tr>
+        <th>Пользователь</th>
+        <th>Количество заказов</th>
+    </tr>
+    {% for user in user_orders_count %}
+    <tr>
+        <td>{{ user.user__username }}</td>
+        <td>{{ user.total }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+
+<h3>Средний чек заказов</h3>
+<p><strong>{{ average_order_value|floatformat:2 }} руб.</strong></p>
+
+
+<h3>Выручка</h3>
+<p><strong>За сегодня:</strong> {{ revenue_today|floatformat:2 }} руб.</p>
+<p><strong>За неделю:</strong> {{ revenue_week|floatformat:2 }} руб.</p>
+<p><strong>За месяц:</strong> {{ revenue_month|floatformat:2 }} руб.</p>
+
+
+<h3>Самые популярные букеты</h3>
+<table border="1">
+    <tr>
+        <th>Букет</th>
+        <th>Количество заказов</th>
+    </tr>
+    {% for bouquet in popular_bouquets %}
+    <tr>
+        <td>{{ bouquet.products__name }}</td>
+        <td>{{ bouquet.total }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<a href="{% url 'download_report' %}" class="btn btn-primary">📥 Скачать отчет</a>
+{% endblock %}

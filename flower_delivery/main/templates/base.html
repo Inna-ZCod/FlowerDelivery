@@ -46,6 +46,13 @@
                        <a class="nav-link" href="{% url 'register' %}">Регистрация</a>
                    </li>
                    {% endif %}
+
+                   <!-- Вход для администратора -->
+                   {% if user.is_superuser %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'admin_reports' %}">📊 Отчёты</a></li>
+                   {% endif %}
+                   <!---------------------------->
+
                </ul>
            </div>
        </div>

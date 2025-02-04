@@ -11,6 +11,12 @@ from decouple import config
 import telebot
 from main.models import User, Order
 import requests  # Библиотека для HTTP-запросов
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
+from django.conf import settings  # Чтобы получать ID админа из settings.py
+from django.utils.timezone import now
+from main.reports import generate_text_report  # Импортируем функцию отчета
+from datetime import datetime
+
 
 
 # Токен бота
@@ -72,6 +78,93 @@ def connect_user(message):
         bot.reply_to(message, "Ваш Telegram ID успешно связан с последним заказом!")
     else:
         bot.reply_to(message, "У вас нет активных заказов.")
+
+
+
+# Панель администратора ---------------------------------
+
+# ID администратора (можно хранить в settings.py)
+ADMIN_TELEGRAM_ID = settings.ADMIN_TELEGRAM_ID
+
+def is_admin(chat_id):
+    """Проверяем, является ли пользователь администратором"""
+    return str(chat_id) in settings.ADMIN_TELEGRAM_ID
+
+
+@bot.message_handler(commands=['admin_panel'])
+def admin_panel(message):
+    """ Проверяем, что сообщение от администратора, и отправляем меню """
+    if str(message.chat.id) != str(ADMIN_TELEGRAM_ID):
+        bot.send_message(message.chat.id, "⛔ У вас нет доступа к этой панели.")
+        return
+
+    # Создаем клавиатуру с кнопками
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(KeyboardButton("📊 Текстовый отчет за сегодня"))
+    markup.add(KeyboardButton("💰 Выручка за сегодня"), KeyboardButton("📦 Количество заказов за сегодня"))
+
+    bot.send_message(message.chat.id, "📢 *Панель администратора*", parse_mode="Markdown", reply_markup=markup)
+
+
+# Отчет (текстовый файл) за сегодня - для Админа
+@bot.message_handler(func=lambda message: message.text == "📊 Текстовый отчет за сегодня")
+def send_text_report(message):
+    """Генерирует и отправляет текстовый отчет за сегодня"""
+    if not is_admin(message.chat.id):
+        bot.send_message(message.chat.id, "⛔ У вас нет доступа к этой команде.")
+        return
+
+    # Генерируем текстовый отчет
+    report_text = generate_text_report()
+    report_path = "report_today.txt"
+
+    with open(report_path, "w", encoding="utf-8") as file:
+        file.write(report_text)
+
+    # Отправляем файл в Телеграм
+    with open(report_path, "rb") as file:
+        bot.send_document(message.chat.id, file, caption="📄 Текстовый отчет за сегодня")
+
+    os.remove(report_path)  # Удаляем файл после отправки
+
+
+# Отчет Выручка за сегодня - для Админа
+@bot.message_handler(func=lambda message: message.text == "💰 Выручка за сегодня")
+def send_daily_revenue(message):
+    if not is_admin(message.chat.id):
+        bot.send_message(message.chat.id, "⛔ У вас нет доступа к этой функции.")
+        return
+
+    # Считаем выручку за сегодня
+    today = datetime.now().date()
+    orders_today = Order.objects.filter(created_at__date=today)
+    revenue_today = sum(order.total_price for order in orders_today)
+
+    bot.send_message(
+        message.chat.id,
+        f"💰 *Выручка за сегодня:*\n{revenue_today} руб.",
+        parse_mode="Markdown",
+    )
+
+
+# Отчет Количество заказов за сегодня - для Админа
+@bot.message_handler(func=lambda message: message.text == "📦 Количество заказов за сегодня")
+def send_daily_orders_count(message):
+    if not is_admin(message.chat.id):
+        bot.send_message(message.chat.id, "⛔ У вас нет доступа к этой функции.")
+        return
+
+    # Считаем количество заказов за сегодня
+    today = datetime.now().date()
+    orders_today_count = Order.objects.filter(created_at__date=today).count()
+
+    bot.send_message(
+        message.chat.id,
+        f"📦 *Количество заказов за сегодня:*\n{orders_today_count} заказ(ов).",
+        parse_mode="Markdown",
+    )
+
+
 
 
 def main():

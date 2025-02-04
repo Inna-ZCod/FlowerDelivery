@@ -15,7 +15,7 @@ from decouple import config
 
 TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN")
 SITE_URL = config("SITE_URL", default="http://127.0.0.1:8000")
-
+ADMIN_TELEGRAM_ID = config("ADMIN_TELEGRAM_ID")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

@@ -1,14 +1,17 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import login, logout, update_session_auth_hash
 from .forms import OrderForm, UserRegistrationForm, ReviewForm
 from .models import Product, Cart, Order, Review
 from django import template
 from telegram_bot import send_telegram_message
-
+from django.db import models
+from django.utils.timezone import now, timedelta
+from django.http import HttpResponse
+from main.reports import generate_text_report
 
 
 # функции для извлечения текста открытки и подписи
@@ -328,3 +331,86 @@ def leave_review(request, order_id):
         form = ReviewForm()
 
     return render(request, "main/leave_review.html", {"form": form, "order": order})
+
+
+# Отчеты для администратора -------------------------------------------
+# Декоратор, чтобы доступ был только у админа
+def admin_required(user):
+    return user.is_authenticated and user.is_superuser
+
+@user_passes_test(admin_required)
+def admin_reports(request):
+    if not request.user.is_superuser:
+        return redirect("home")  # Доступ только для админа
+
+    total_orders = Order.objects.count()  # Отчет: Общее количество заказов
+
+    # Отчет: Количество заказов по статусам
+    status_counts = Order.objects.values("status").annotate(count=models.Count("id"))
+
+    # Переводим статусы
+    status_translation = {
+        "accepted": "Принят",
+        "assembling": "В сборке",
+        "on_the_way": "В пути",
+        "delivered": "Доставлен"
+    }
+
+    # Формируем удобную структуру
+    orders_by_status = {
+        status_translation[entry["status"]]: entry["count"] for entry in status_counts
+    }
+
+    # Отчет: Количество заказов, оформленных каждым пользователем
+    user_orders_count = Order.objects.values("user__username").annotate(total=models.Count("id")).order_by("-total")
+
+    # Отчет: Самые популярные букеты
+    popular_bouquets = (
+        Order.objects.values("products__name")
+        .annotate(total=models.Count("products"))
+        .order_by("-total")[:5]  # Топ-5 самых популярных букетов
+    )
+
+    # Отчет: Рассчитываем средний чек заказов
+    average_order_value = Order.objects.aggregate(avg_price=models.Avg("total_price"))["avg_price"] or 0
+
+
+    # Отчет: Общая сумма выручки за день/неделю/месяц
+    # Дата сегодня
+    today = now().date()
+
+    # Фильтрация заказов по дате
+    revenue_today = Order.objects.filter(created_at__date=today).aggregate(total=models.Sum("total_price"))[
+                        "total"] or 0
+    revenue_week = \
+    Order.objects.filter(created_at__gte=today - timedelta(days=7)).aggregate(total=models.Sum("total_price"))[
+        "total"] or 0
+    revenue_month = \
+    Order.objects.filter(created_at__gte=today - timedelta(days=30)).aggregate(total=models.Sum("total_price"))[
+        "total"] or 0
+
+
+    return render(request, "main/admin_reports.html", {
+        "total_orders": total_orders,
+        "orders_by_status": orders_by_status,
+        "user_orders_count": user_orders_count,
+        "popular_bouquets": popular_bouquets,
+        "average_order_value": average_order_value,
+        "revenue_today": revenue_today,  # ✅ Выручка за сегодня
+        "revenue_week": revenue_week,    # ✅ Выручка за неделю
+        "revenue_month": revenue_month,  # ✅ Выручка за месяц
+    })
+
+
+# Скачивание отчетов администратора
+def download_report(request):
+    if not request.user.is_staff:
+        return HttpResponse("У вас нет доступа к этому отчету.", status=403)
+
+    """Генерирует текстовый отчет и отправляет его в виде файла."""
+    report_content = generate_text_report()
+
+    # Создаем HTTP-ответ с файлом
+    response = HttpResponse(report_content, content_type="text/plain")
+    response["Content-Disposition"] = "attachment; filename=order_report.txt"
+    return response

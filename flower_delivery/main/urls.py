@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
 from main.views import confirm_order, finalize_order, leave_review
+from main.views import admin_reports
 
 urlpatterns = [
     path('', views.catalog, name='home'),  # Главная страница
@@ -21,4 +22,6 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'), # Профиль пользователя
     path('order/finalize/', finalize_order, name='finalize_order'), # Финальное оформление заказа
     path("order/<int:order_id>/review/", leave_review, name="leave_review"), # Отзывы
+    path("reports/", admin_reports, name="admin_reports"),  # Страница отчётов для администратора
+    path("reports/download/", views.download_report, name="download_report"), # Скачивание отчета для администратора
 ]
