@@ -197,34 +197,31 @@ def finalize_order(request):
         order.save()
 
         # Формируем сообщение для Telegram
+
+#    for item in cart_items:
         message_text = f"🛍 *Ваш заказ №{order.id} подтверждён!*\n\n"
-        for item in cart_items:
-            message_text += f"🌸 *Букет:* {item.product.name}\n"
-            message_text += f"📍 *Адрес доставки:* {item.address}\n"
+        message_text += f"🌸 *Букет:* {item.product.name}\n"
+        message_text += f"📍 *Адрес доставки:* {item.address}\n"
 
-            if item.card_text and item.signature:
-                message_text += f"💌 *Текст на открытке:* {item.card_text}\n✍ *Подпись:* {item.signature}\n"
-            elif item.card_text:
-                message_text += f"💌 *Текст на открытке:* {item.card_text}\n✍ *Подпись:* Без подписи\n"
-            elif item.signature:
-                message_text += f"💌 *Текст на открытке:* {item.signature}\n"
-            else:
-                message_text += f"💌 *Текст на открытке:* Без открытки\n"
+        if item.card_text and item.signature:
+            message_text += f"💌 *Текст на открытке:* {item.card_text}\n✍ *Подпись:* {item.signature}\n"
+        elif item.card_text:
+            message_text += f"💌 *Текст на открытке:* {item.card_text}\n✍ *Подпись:* Без подписи\n"
+        elif item.signature:
+            message_text += f"💌 *Текст на открытке:* {item.signature}\n"
+        else:
+            message_text += f"💌 *Текст на открытке:* Без открытки\n"
 
-            message_text += f"💰 *Цена:* {item.product.price} руб.\n"
-            message_text += f"📅 *Дата заказа:* {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
-            message_text += "------------------------\n"
+        message_text += f"💰 *Цена:* {item.product.price} руб.\n"
+        message_text += f"📅 *Дата заказа:* {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+        message_text += "------------------------\n"
+
 
         message_text += "📦 Ожидайте дальнейшей информации о статусе заказа!\n"
-
 
         # Отправляем сообщение пользователю, если у него есть Telegram ID
         if telegram_chat_id:
             response = send_telegram_message(telegram_chat_id, message_text)
-            print("📨 Ответ Telegram API:", response)  # Для отладки
-        else:
-            print("⚠ У пользователя нет Telegram ID, сообщение не отправлено.")
-
 
     cart_items.delete()  # ✅ Очищаем корзину
 
