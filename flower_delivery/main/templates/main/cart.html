@@ -26,7 +26,7 @@
             <p>Цена: {{ item.product.price }} руб.</p>
 
             <label for="address_{{ item.id }}">Адрес доставки:</label>
-            <input type="text" id="address_{{ item.id }}" name="address_{{ item.id }}" value="{{ item.address }}">
+            <input type="text" id="address_{{ item.id }}" name="address_{{ item.id }}" value="{{ item.address }}" required>
 
             <label for="card_text_{{ item.id }}">Текст на открытке:</label>
             <textarea id="card_text_{{ item.id }}" name="card_text_{{ item.id }}">{{ item.card_text }}</textarea>

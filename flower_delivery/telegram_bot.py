@@ -16,12 +16,15 @@ from django.conf import settings  # Чтобы получать ID админа 
 from django.utils.timezone import now
 from main.reports import generate_text_report  # Импортируем функцию отчета
 from datetime import datetime
+from django.urls import reverse
 
 
 
 # Токен бота
 BOT_TOKEN = config("TELEGRAM_BOT_TOKEN")
 bot = telebot.TeleBot(BOT_TOKEN)
+MY_SITE = config("SITE_URL")
+ADMIN_TELEGRAM_ID = settings.ADMIN_TELEGRAM_ID
 
 
 def send_telegram_message(chat_id, text):
@@ -38,30 +41,104 @@ def start(message):
     args = message.text.split()
     if len(args) > 1: # Проверяем, есть ли параметры в команде
         user_id = args[1] # Получаем ID пользователя из параметра
-        print("Получен user_id:", user_id)  # Для проверки user_id
         try:
             user = User.objects.get(id=user_id)
-            print("Найден пользователь:", user)  # Для проверки пользователя
             user.telegram_chat_id = message.chat.id # Сохраняем Telegram ID в модели User
             user.save()
-            print(f"Telegram ID {message.chat.id} сохранён для пользователя {user.username}. Проверяем в базе данных:")
             user_from_db = User.objects.get(pk=user.id)
-            print(f"Проверка: Telegram ID в базе данных — {user_from_db.telegram_chat_id}")
 
             # Привязываем Telegram ID к заказам пользователя
             orders = Order.objects.filter(user=user)
-            print(f"Найдены заказы для пользователя {user.username}: {[order.id for order in orders]}")
             for order in orders:
                 order.telegram_chat_id = message.chat.id
                 order.save()
-                print(f"Обновлён заказ #{order.id} с telegram_chat_id {message.chat.id}")  # Для проверки
 
             bot.reply_to(message, "Ваш Telegram успешно привязан! Вы будете получать уведомления о заказах.")
         except User.DoesNotExist:
-            print("Пользователь не найден!")
             bot.reply_to(message, "Ошибка: пользователь не найден.")
+    # else:
+    #     bot.reply_to(message, f"Привет, {message.from_user.first_name}! Я бот для отслеживания заказов.")
+
+
+    if str(message.chat.id) == ADMIN_TELEGRAM_ID:
+        # Если админ, отправляем его сразу в панель администратора
+        admin_panel(message)
     else:
-        bot.reply_to(message, f"Привет, {message.from_user.first_name}! Я бот для отслеживания заказов.")
+        # Если обычный пользователь, отправляем стандартное пользовательское меню
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(KeyboardButton("🌐 Перейти на сайт"), KeyboardButton("📦 Мои заказы"))
+        bot.send_message(
+            message.chat.id,
+            "👋 Добро пожаловать в FlowerDelivery! Здесь вы можете отслеживать свои заказы и переходить на наш сайт.",
+            reply_markup=markup,
+        )
+
+#     # Клавиатура для пользователя
+#     markup = ReplyKeyboardMarkup(resize_keyboard=True)
+#     markup.add(KeyboardButton("🌐 Перейти на сайт"), KeyboardButton("📦 Мои заказы"))
+#
+#     bot.send_message(
+#         message.chat.id,
+# #        "Привет! Выберите действие:",
+#         reply_markup=markup,
+#     )
+
+
+# Кнопка Перейти на сайт - для пользователя
+@bot.message_handler(func=lambda message: message.text == "🌐 Перейти на сайт")
+def go_to_site(message):
+    bot.send_message(
+        message.chat.id,
+        f"🌐 Вот ссылка на наш сайт:\n[Перейти на сайт]({MY_SITE})",
+        parse_mode="Markdown",
+    )
+
+
+# Кнопка Мои заказы - для пользователя
+@bot.message_handler(func=lambda message: message.text == "📦 Мои заказы")
+def my_orders(message):
+    user = User.objects.filter(telegram_chat_id=message.chat.id).first()
+
+    if not user:
+        bot.send_message(message.chat.id, "❌ Вы не зарегистрированы на сайте. Пожалуйста, зарегистрируйтесь.")
+        return
+
+    orders = Order.objects.filter(user=user).order_by('-created_at')[:5]
+
+    if not orders.exists():
+        bot.send_message(message.chat.id, "📭 У вас пока нет заказов.")
+        return
+
+    # Формируем текст сообщения
+    orders_message = "📦 *Ваши последние заказы:*\n\n"
+
+    for order in orders:
+        orders_message += f"🔹 *Заказ №{order.id}*\n"
+        orders_message += f"📅 Дата: {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+        orders_message += f"🔄 Статус: {order.get_status_display()}\n"
+        orders_message += f"💐 Букет: {order.products.first().name if order.products.exists() else 'Не указан'}\n"
+
+        # Ссылка для отзыва, если статус "Доставлен" и отзыв не оставлен
+        if order.status == "delivered" and not hasattr(order, "review"):
+            review_url = f"{MY_SITE}{reverse('leave_review', args=[order.id])}"
+            orders_message += f"📝 [Оставить отзыв]({review_url})\n"
+
+        # Ссылка для повторного заказа
+        reorder_url = f"{MY_SITE}{reverse('product_detail', args=[order.products.first().id])}"
+        orders_message += f"🔄 [Повторить заказ]({reorder_url})\n"
+
+        orders_message += "------------------------\n"
+
+    # Добавляем ссылку на сайт
+    orders_message += f"\n🌐 [Посмотреть все заказы]({MY_SITE}/orders/)"
+
+    bot.send_message(
+        message.chat.id,
+        orders_message,
+        parse_mode="Markdown"
+    )
+
+
 
 
 # Команда /connect для связи Telegram ID с заказом
@@ -82,9 +159,6 @@ def connect_user(message):
 
 
 # Панель администратора ---------------------------------
-
-# ID администратора (можно хранить в settings.py)
-ADMIN_TELEGRAM_ID = settings.ADMIN_TELEGRAM_ID
 
 def is_admin(chat_id):
     """Проверяем, является ли пользователь администратором"""

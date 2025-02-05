@@ -333,6 +333,25 @@ def leave_review(request, order_id):
     return render(request, "main/leave_review.html", {"form": form, "order": order})
 
 
+# Повторный заказ
+@login_required
+def repeat_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+
+    # Создаем новые элементы в корзине
+    for product in order.products.all():
+        Cart.objects.create(
+            user=request.user,
+            product=product,
+            address=order.address,
+            card_text=order.card_text,
+            signature=order.signature,
+        )
+
+    messages.success(request, "Товары из заказа добавлены в корзину!")
+    return redirect("cart")
+
+
 # Отчеты для администратора -------------------------------------------
 # Декоратор, чтобы доступ был только у админа
 def admin_required(user):

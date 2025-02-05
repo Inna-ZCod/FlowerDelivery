@@ -20,6 +20,7 @@
 
         <p><strong>Цена:</strong> {{ order.price }} руб.</p>
 
+        <a href="{% url 'repeat_order' order.order_id %}" class="btn btn-primary">Повторить заказ</a>
 
         {% if order.status == "Доставлен" %}
             {% if not order.has_review %}

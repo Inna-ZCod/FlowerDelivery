@@ -24,4 +24,5 @@ urlpatterns = [
     path("order/<int:order_id>/review/", leave_review, name="leave_review"), # Отзывы
     path("reports/", admin_reports, name="admin_reports"),  # Страница отчётов для администратора
     path("reports/download/", views.download_report, name="download_report"), # Скачивание отчета для администратора
+    path("order/<int:order_id>/repeat/", views.repeat_order, name="repeat_order"), # Повторный заказ
 ]
