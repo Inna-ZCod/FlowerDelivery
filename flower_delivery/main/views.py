@@ -1,10 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import login, logout, update_session_auth_hash
-from .forms import OrderForm, UserRegistrationForm, ReviewForm
+from .forms import UserRegistrationForm, ReviewForm
 from .models import Product, Cart, Order, Review
 from django import template
 from telegram_bot import send_telegram_message
@@ -12,6 +11,7 @@ from django.db import models
 from django.utils.timezone import now, timedelta
 from django.http import HttpResponse
 from main.reports import generate_text_report
+from main.utils import STATUS_TRANSLATION, generate_card_info, send_order_notification
 
 
 # функции для извлечения текста открытки и подписи
@@ -39,12 +39,7 @@ def catalog(request):
     return render(request, 'main/catalog.html', {'products': products})
 
 
-# Один продукт = один букет
-def product_detail(request, product_id):
-    product = get_object_or_404(Product, id=product_id)  # Получаем товар по ID или возвращаем 404
-    reviews = Review.objects.filter(product=product).order_by('-created_at')  # ✅ Берем все отзывы, а не только текущего пользователя
-    return render(request, 'main/product_detail.html', {"product": product, "reviews": reviews})
-
+# ---------------Пользователь-------------------------------
 
 # обработчик для регистрации
 def register(request):
@@ -60,9 +55,39 @@ def register(request):
         form = UserRegistrationForm()
     return render(request, 'main/register.html', {'form': form})
 
+
 #  перенаправляем пользователя на страницу с кнопкой для привязки бота
 def connect_bot(request):
     return render(request, 'main/connect_bot.html')
+
+
+# Выход пользователя из аккаунта
+def logout_user(request):
+    logout(request)  # Завершаем сессию пользователя
+    return redirect('home')  # Перенаправляем на главную
+
+
+# Профиль пользователя
+def profile(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    password_form = PasswordChangeForm(request.user, request.POST or None)
+    if request.method == 'POST' and password_form.is_valid():
+        password_form.save()
+        update_session_auth_hash(request, password_form.user)  # Чтобы не разлогинивало
+        messages.success(request, "Пароль успешно изменён.")
+        return redirect('profile')
+
+    return render(request, 'main/profile.html', {'password_form': password_form})
+
+# ------------- Корзина -----------------
+
+# Один продукт = один букет
+def product_detail(request, product_id):
+    product = get_object_or_404(Product, id=product_id)  # Получаем товар по ID или возвращаем 404
+    reviews = Review.objects.filter(product=product).order_by('-created_at')  # ✅ Берем все отзывы, а не только текущего пользователя
+    return render(request, 'main/product_detail.html', {"product": product, "reviews": reviews})
 
 
 # Функция для добавления в корзину
@@ -102,10 +127,36 @@ def delete_cart_item(request, cart_item_id):
     return redirect('cart')
 
 
+# -------------- Заказы ----------------------
+
+# Отображение списка заказов на странице "Мои заказы"
+def user_orders(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+
+    orders = Order.objects.filter(user=request.user).select_related("review").order_by('-created_at')
+
+    # Подготовка структуры для хранения отформатированных данных заказов
+    formatted_orders = []
+    for order in orders:
+        # Формируем корректное сообщение об открытке
+        card_info = generate_card_info(order.card_text, order.signature)
+
+        formatted_orders.append({
+            "order_id": order.id,
+            "status": STATUS_TRANSLATION.get(order.status, order.status),  # Переводим статус
+            "created_at": order.created_at.strftime("%d.%m.%Y %H:%M"),  # Форматируем дату
+            "bouquet_name": order.products.first().name if order.products.exists() else "Не указан",  # Название букета
+            "delivery_address": order.address if order.address else "Адрес не указан",
+            "card_info": card_info,  # Открытка и подпись
+            "price": order.total_price,  # Цена
+            "has_review": hasattr(order, "review")  # Проверяем, есть ли у заказа отзыв
+        })
+
+    return render(request, 'main/orders.html', {'orders': formatted_orders})
 
 
-# Новое представление, которое будет обрабатывать нажатие кнопки "Подтвердить заказ" на странице корзины
-# Обработка подтверждения заказа прямо из корзины
+# Обработка подтверждения заказа из корзины при нажатии кнопки "Подтвердить заказ"
 def confirm_order(request):
     if not request.user.is_authenticated:
         return redirect('login')
@@ -115,6 +166,7 @@ def confirm_order(request):
         messages.error(request, "Ваша корзина пуста. Добавьте товары, чтобы оформить заказ.")
         return redirect('cart')
 
+    # Проверяем, есть ли пустые адреса
     if request.method == "POST":
         missing_addresses = [item for item in cart_items if not request.POST.get(f"address_{item.id}", "").strip()]
         if missing_addresses:
@@ -136,24 +188,7 @@ def confirm_order(request):
         signature = item.signature
 
         # Логика формирования текста открытки
-        if text and signature:
-            card_info = [
-                ("Текст на открытке:", text),
-                ("Подпись:", signature)
-            ]
-        elif text:
-            card_info = [
-                ("Текст на открытке:", text),
-                ("Подпись:", "Без подписи")
-            ]
-        elif signature:
-            card_info = [
-                ("Текст на открытке:", signature)  # Подпись становится текстом на открытке
-            ]
-        else:
-            card_info = [
-                ("Текст на открытке:", "Без открытки")
-            ]
+        card_info = generate_card_info(text, signature)
 
         order_summary.append({
             "bouquet_name": item.product.name,
@@ -196,115 +231,20 @@ def finalize_order(request):
         order.products.set([item.product])
         order.save()
 
-        # Формируем сообщение для Telegram
-
-#    for item in cart_items:
-        message_text = f"🛍 *Ваш заказ №{order.id} подтверждён!*\n\n"
-        message_text += f"🌸 *Букет:* {item.product.name}\n"
-        message_text += f"📍 *Адрес доставки:* {item.address}\n"
-
-        if item.card_text and item.signature:
-            message_text += f"💌 *Текст на открытке:* {item.card_text}\n✍ *Подпись:* {item.signature}\n"
-        elif item.card_text:
-            message_text += f"💌 *Текст на открытке:* {item.card_text}\n✍ *Подпись:* Без подписи\n"
-        elif item.signature:
-            message_text += f"💌 *Текст на открытке:* {item.signature}\n"
-        else:
-            message_text += f"💌 *Текст на открытке:* Без открытки\n"
-
-        message_text += f"💰 *Цена:* {item.product.price} руб.\n"
-        message_text += f"📅 *Дата заказа:* {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
-        message_text += "------------------------\n"
-
-
-        message_text += "📦 Ожидайте дальнейшей информации о статусе заказа!\n"
-
-        # Отправляем сообщение пользователю, если у него есть Telegram ID
         if telegram_chat_id:
-            response = send_telegram_message(telegram_chat_id, message_text)
+            header = f"🛍 *Ваш заказ №{order.id} подтверждён!*\n\n"
+            message_text = header + send_order_notification(order)
+            message_text += "------------------------\n🌸 Ожидайте дальнейшей информации о статусе заказа!"
+            send_telegram_message(telegram_chat_id, message_text)
+
+        # -------------------------------
 
     cart_items.delete()  # ✅ Очищаем корзину
 
     return redirect('user_orders')  # Перенаправляем на "Мои заказы"
 
 
-
-# Подтвердение заказа
-def order_success(request):
-    return render(request, 'main/order_success.html')
-
-
-# Отображение списка заказов
-def user_orders(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
-
-    orders = Order.objects.filter(user=request.user).select_related("review").order_by('-created_at')
-
-    # Перевод статусов на русский
-    status_translation = {
-        "accepted": "Принят",
-        "assembling": "В сборке",
-        "on_the_way": "В пути",
-        "delivered": "Доставлен"
-    }
-
-    formatted_orders = []
-    for order in orders:
-        # Формируем корректное сообщение об открытке
-        if order.card_text and order.signature:
-            card_info = [
-                ("Текст на открытке:", order.card_text),
-                ("Подпись:", order.signature)
-            ]
-        elif order.card_text:
-            card_info = [
-                ("Текст на открытке:", order.card_text),
-                ("Подпись:", "Без подписи")
-            ]
-        elif order.signature:
-            card_info = [
-                ("Текст на открытке:", order.signature)
-            ]
-        else:
-            card_info = [
-                ("Текст на открытке:", "Без открытки")
-            ]
-
-        formatted_orders.append({
-            "order_id": order.id,
-            "status": status_translation.get(order.status, order.status),  # Переводим статус
-            "created_at": order.created_at.strftime("%d.%m.%Y %H:%M"),  # Форматируем дату
-            "bouquet_name": order.products.first().name if order.products.exists() else "Не указан",  # Название букета
-            "delivery_address": order.address if order.address else "Адрес не указан",
-            "card_info": card_info,  # Открытка и подпись
-            "price": order.total_price,  # Цена
-            "has_review": hasattr(order, "review")  # Проверяем, есть ли у заказа отзыв
-        })
-
-    return render(request, 'main/orders.html', {'orders': formatted_orders})
-
-
-# Выход пользователя из аккаунта
-def logout_user(request):
-    logout(request)  # Завершаем сессию пользователя
-    return redirect('home')  # Перенаправляем на главную
-
-
-# Профиль пользователя
-def profile(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
-
-    password_form = PasswordChangeForm(request.user, request.POST or None)
-    if request.method == 'POST' and password_form.is_valid():
-        password_form.save()
-        update_session_auth_hash(request, password_form.user)  # Чтобы не разлогинивало
-        messages.success(request, "Пароль успешно изменён.")
-        return redirect('profile')
-
-    return render(request, 'main/profile.html', {'password_form': password_form})
-
+# -------------- Отзывы ---------------------------------------
 
 # Отзывы - обработка формы для отзыва
 @login_required
@@ -349,7 +289,8 @@ def repeat_order(request, order_id):
     return redirect("cart")
 
 
-# Отчеты для администратора -------------------------------------------
+# ------------ Отчеты для администратора -------------------------
+
 # Декоратор, чтобы доступ был только у админа
 def admin_required(user):
     return user.is_authenticated and user.is_superuser
@@ -364,17 +305,9 @@ def admin_reports(request):
     # Отчет: Количество заказов по статусам
     status_counts = Order.objects.values("status").annotate(count=models.Count("id"))
 
-    # Переводим статусы
-    status_translation = {
-        "accepted": "Принят",
-        "assembling": "В сборке",
-        "on_the_way": "В пути",
-        "delivered": "Доставлен"
-    }
-
     # Формируем удобную структуру
     orders_by_status = {
-        status_translation[entry["status"]]: entry["count"] for entry in status_counts
+        STATUS_TRANSLATION[entry["status"]]: entry["count"] for entry in status_counts
     }
 
     # Отчет: Количество заказов, оформленных каждым пользователем
