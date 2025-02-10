@@ -3,6 +3,10 @@
 # -------------------------------------------------------
 #
 
+from django.conf import settings
+from .models import Review
+
+
 
 # Перевод статусов на русский язык
 STATUS_TRANSLATION = {
@@ -53,3 +57,34 @@ def send_order_notification(order):
     message_text += f"📅 *Дата заказа:* {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
 
     return message_text
+
+
+
+def generate_order_message(order):
+    """Генерирует текстовое сообщение о заказе"""
+    translated_status = STATUS_TRANSLATION.get(order.status, order.status)
+    return (
+        f"📢 Обновление статуса заказа №{order.id}!\n\n"
+        f"🔄 Новый статус: *{translated_status}*\n"
+        f"📅 Дата заказа: {order.created_at.strftime('%d.%m.%Y %H:%M')}\n"
+        f"💐 Букет: {order.products.first().name if order.products.exists() else 'Не указан'}\n"
+        f"📍 Адрес доставки: {order.address}\n"
+        f"💰 Цена: {order.total_price} руб."
+    )
+
+
+def generate_review_button(order):
+    """Генерирует кнопку для оставления отзыва, если заказ доставлен"""
+    if order.status != "delivered":
+        return None
+
+    review_exists = Review.objects.filter(order=order).exists()
+
+    if review_exists:
+        review_url = f"{settings.SITE_URL}/product/{order.products.first().id}/"
+        button_text = "🌟 Посмотреть отзывы"
+    else:
+        review_url = f"{settings.SITE_URL}/order/{order.id}/review/"
+        button_text = "📝 Оставить отзыв"
+
+    return {"inline_keyboard": [[{"text": button_text, "url": review_url}]]}

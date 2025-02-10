@@ -2,21 +2,21 @@ import os
 import django
 
 # Указываем Django, какой файл настроек использовать
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flower_delivery.settings')  # Замени flower_delivery на имя твоего проекта
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flower_delivery.settings')  
 print("DJANGO_SETTINGS_MODULE:", os.environ.get('DJANGO_SETTINGS_MODULE'))  # Для проверки
 django.setup()
 
 
-from decouple import config
 import telebot
-from main.models import User, Order
 import requests  # Библиотека для HTTP-запросов
+from decouple import config
+from main.models import User, Order
+from main.reports import generate_text_report  # Импортируем функцию отчета
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 from django.conf import settings  # Чтобы получать ID админа из settings.py
-from django.utils.timezone import now
-from main.reports import generate_text_report  # Импортируем функцию отчета
-from datetime import datetime
 from django.urls import reverse
+from django.utils.timezone import now
+from datetime import datetime
 
 
 
@@ -72,16 +72,6 @@ def start(message):
             "👋 Добро пожаловать в FlowerDelivery! Здесь вы можете отслеживать свои заказы и переходить на наш сайт.",
             reply_markup=markup,
         )
-
-#     # Клавиатура для пользователя
-#     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-#     markup.add(KeyboardButton("🌐 Перейти на сайт"), KeyboardButton("📦 Мои заказы"))
-#
-#     bot.send_message(
-#         message.chat.id,
-# #        "Привет! Выберите действие:",
-#         reply_markup=markup,
-#     )
 
 
 # Кнопка Перейти на сайт - для пользователя
@@ -158,7 +148,7 @@ def connect_user(message):
 
 
 
-# Панель администратора ---------------------------------
+# ----------- Панель администратора ---------------------------------
 
 def is_admin(chat_id):
     """Проверяем, является ли пользователь администратором"""
