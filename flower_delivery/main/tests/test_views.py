@@ -347,23 +347,34 @@ def test_generate_text_report(db, authenticated_user):
 # ------------------------------- Отзывы и рейтинги ----------------------------
 
 @pytest.fixture
-def create_product(db):
-    """Создает тестовый продукт с изображением."""
+def create_image():
+    """Создает тестовое изображение."""
     image = BytesIO()
     Image.new("RGB", (100, 100)).save(image, format="JPEG")
     image.seek(0)
-    uploaded_image = SimpleUploadedFile("test.jpg", image.getvalue(), content_type="image/jpeg")
+    return SimpleUploadedFile("test.jpg", image.getvalue(), content_type="image/jpeg")
 
-    return Product.objects.create(name="Тестовый букет", price=1500, image=uploaded_image)
+
+@pytest.fixture
+def create_product(db, create_image):
+    """Создает тестовый продукт с изображением."""
+    return Product.objects.create(name="Тестовый букет", price=1500, image=create_image)
+
+
+@pytest.fixture
+def create_order(db, authenticated_user, create_product):
+    """Создает тестовый заказ с продуктом."""
+    user, _ = authenticated_user
+    order = Order.objects.create(user=user, total_price=2000, status="delivered", created_at=timezone.now())
+    order.products.set([create_product])
+    return order
 
 
 @pytest.mark.django_db
-def test_leave_review(client, authenticated_user, create_product):
+def test_leave_review(client, authenticated_user, create_order):
     """Тест на оставление отзыва пользователем."""
     user, client = authenticated_user
-    product = create_product
-    order = Order.objects.create(user=user, total_price=2000, status="delivered", created_at=timezone.now())
-    order.products.set([product])
+    order = create_order
 
     response = client.post(reverse("leave_review", args=[order.id]), {"text": "Отличный букет!", "rating": 5})
 
@@ -372,13 +383,11 @@ def test_leave_review(client, authenticated_user, create_product):
 
 
 @pytest.mark.django_db
-def test_cannot_leave_duplicate_review(client, authenticated_user, create_product):
+def test_cannot_leave_duplicate_review(client, authenticated_user, create_order):
     """Тест: пользователь не может оставить повторный отзыв на один заказ."""
     user, client = authenticated_user
-    product = create_product
-    order = Order.objects.create(user=user, total_price=2000, status="delivered", created_at=timezone.now())
-    order.products.set([product])
-    Review.objects.create(user=user, product=product, order=order, text="Хорошо", rating=4)
+    order = create_order
+    Review.objects.create(user=user, product=order.products.first(), order=order, text="Хорошо", rating=4)
 
     response = client.post(reverse("leave_review", args=[order.id]), {"text": "Плохой букет", "rating": 1})
 
@@ -399,7 +408,6 @@ def test_reviews_displayed_on_product_page(client, authenticated_user, create_pr
 
     assert response.status_code == 200
     assert "Лучший букет!" in response.content.decode()  # Проверяем, что отзыв отображается
-
 
 
 
