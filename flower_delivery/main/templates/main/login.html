@@ -2,13 +2,20 @@
 
 {% block title %}Вход{% endblock %}
 
-
 {% block content %}
-    <h1>Вход на сайт</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Войти</button>
-    </form>
-    <p>Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Вход на сайт</h2>
+    <div class="card shadow-sm p-4 mx-auto" style="max-width: 400px;">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.as_p }}
+            </div>
+            <button type="submit" class="btn btn-success w-100">Войти</button>
+        </form>
+    </div>
+    <div class="text-center mt-3">
+        <p>Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
+    </div>
+</div>
 {% endblock %}

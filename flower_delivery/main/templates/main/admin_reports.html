@@ -1,64 +1,88 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>📊 Отчёты администратора</h2>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">📊 Отчёты администратора</h2>
 
-<p>Общее количество заказов: <strong>{{ total_orders }}</strong></p>
+    <div class="card shadow-sm p-4 mb-4">
+        <h4>Общее количество заказов</h4>
+        <p class="fs-5"><strong>{{ total_orders }}</strong></p>
+    </div>
 
+    <div class="card shadow-sm p-4 mb-4">
+        <h4>Заказы по статусам</h4>
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Статус</th>
+                    <th>Количество</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for status, count in orders_by_status.items %}
+                <tr>
+                    <td>{{ status }}</td>
+                    <td>{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-<h3>Заказы по статусам:</h3>
-<table>
-    <tr>
-        <th>Статус</th>
-        <th>Количество</th>
-    </tr>
-    {% for status, count in orders_by_status.items %}
-    <tr>
-        <td>{{ status }}</td>
-        <td>{{ count }}</td>
-    </tr>
-    {% endfor %}
-</table>
+    <div class="card shadow-sm p-4 mb-4">
+        <h4>Количество заказов по пользователям</h4>
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Пользователь</th>
+                    <th>Количество заказов</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in user_orders_count %}
+                <tr>
+                    <td>{{ user.user__username }}</td>
+                    <td>{{ user.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
+    <div class="card shadow-sm p-4 mb-4">
+        <h4>Средний чек заказов</h4>
+        <p class="fs-5"><strong>{{ average_order_value|floatformat:2 }} руб.</strong></p>
+    </div>
 
-<h3>Количество заказов по пользователям</h3>
-<table border="1">
-    <tr>
-        <th>Пользователь</th>
-        <th>Количество заказов</th>
-    </tr>
-    {% for user in user_orders_count %}
-    <tr>
-        <td>{{ user.user__username }}</td>
-        <td>{{ user.total }}</td>
-    </tr>
-    {% endfor %}
-</table>
+    <div class="card shadow-sm p-4 mb-4">
+        <h4>Выручка</h4>
+        <p><strong>За сегодня:</strong> {{ revenue_today|floatformat:2 }} руб.</p>
+        <p><strong>За неделю:</strong> {{ revenue_week|floatformat:2 }} руб.</p>
+        <p><strong>За месяц:</strong> {{ revenue_month|floatformat:2 }} руб.</p>
+    </div>
 
+    <div class="card shadow-sm p-4 mb-4">
+        <h4>Самые популярные букеты</h4>
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Букет</th>
+                    <th>Количество заказов</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bouquet in popular_bouquets %}
+                <tr>
+                    <td>{{ bouquet.products__name }}</td>
+                    <td>{{ bouquet.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-<h3>Средний чек заказов</h3>
-<p><strong>{{ average_order_value|floatformat:2 }} руб.</strong></p>
-
-
-<h3>Выручка</h3>
-<p><strong>За сегодня:</strong> {{ revenue_today|floatformat:2 }} руб.</p>
-<p><strong>За неделю:</strong> {{ revenue_week|floatformat:2 }} руб.</p>
-<p><strong>За месяц:</strong> {{ revenue_month|floatformat:2 }} руб.</p>
-
-
-<h3>Самые популярные букеты</h3>
-<table border="1">
-    <tr>
-        <th>Букет</th>
-        <th>Количество заказов</th>
-    </tr>
-    {% for bouquet in popular_bouquets %}
-    <tr>
-        <td>{{ bouquet.products__name }}</td>
-        <td>{{ bouquet.total }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-<a href="{% url 'download_report' %}" class="btn btn-primary">📥 Скачать отчет</a>
+    <div class="text-center mt-4">
+        <a href="{% url 'download_report' %}" class="btn btn-primary">📥 Скачать отчет</a>
+    </div>
+</div>
 {% endblock %}

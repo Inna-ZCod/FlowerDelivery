@@ -2,37 +2,55 @@
 
 {% block title %}{{ product.name }}{% endblock %}
 
-
 {% block content %}
-    <h1>{{ product.name }}</h1>
-    <img src="{{ product.image.url }}" alt="{{ product.name }}" width="400" height="400">
-    <p>{{ product.description }}</p>
-    <p>Цена: {{ product.price }} руб.</p>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <img src="{{ product.image.url }}" class="img-fluid rounded shadow" alt="{{ product.name }}">
+        </div>
+        <div class="col-md-6">
+            <h1 class="mb-3">{{ product.name }}</h1>
+            <p class="text-muted">{{ product.description }}</p>
+            <h4 class="text-primary">Цена: {{ product.price }} руб.</h4>
+            <form action="{% url 'add_to_cart' product.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success mt-3">Добавить в корзину</button>
+            </form>
+            <a href="{% url 'catalog' %}" class="btn btn-secondary mt-2">Вернуться в каталог</a>
+            <a href="{% url 'cart' %}" class="btn btn-primary mt-2">Перейти в корзину</a>
+        </div>
+    </div>
 
-    <form action="{% url 'add_to_cart' product.id %}" method="post">
-        {% csrf_token %}
-        <button type="submit">Добавить в корзину</button>
-    </form>
+    <div class="mt-5">
+        <h2>Отзывы</h2>
+        {% if reviews %}
+            <div class="list-group">
+                {% for review in reviews %}
+                    <div class="list-group-item">
+                        <h5>{{ review.user.username }} <small class="text-muted">{{ review.created_at|date:"d.m.Y H:i" }}</small></h5>
+                        <div class="star-rating">
+                            {% for _ in "12345"|slice:review.rating %}
+                                <i class="fas fa-star selected"></i>
+                            {% endfor %}
+                        </div>
+                        <p>{{ review.text }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">Отзывов пока нет. Будьте первым!</p>
+        {% endif %}
+    </div>
+</div>
 
-    <a href="{% url 'catalog' %}">Вернуться в каталог</a>
-    <a href="{% url 'cart' %}" class="btn btn-primary">Перейти в корзину</a>
-
-
-
-    <h2>Отзывы</h2>
-    {% if reviews %}
-        <ul>
-            {% for review in reviews %}
-                <li>
-                    <strong>{{ review.user.username }}</strong> - <span>{{ review.created_at|date:"d.m.Y H:i" }}</span><br>
-                    <strong>Оценка:</strong> {{ review.rating }} ★<br>
-                    <p>{{ review.text }}</p>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>Отзывов пока нет. Будьте первым!</p>
-    {% endif %}
-
-
+<style>
+    .star-rating {
+        display: flex;
+        gap: 3px;
+    }
+    .star-rating .fa-star {
+        font-size: 1.4rem;
+        color: gold;
+    }
+</style>
 {% endblock %}

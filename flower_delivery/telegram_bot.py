@@ -15,7 +15,6 @@ from main.reports import generate_text_report  # Импортируем функ
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 from django.conf import settings  # Чтобы получать ID админа из settings.py
 from django.urls import reverse
-from django.utils.timezone import now
 from datetime import datetime
 
 
@@ -56,8 +55,7 @@ def start(message):
             bot.reply_to(message, "Ваш Telegram успешно привязан! Вы будете получать уведомления о заказах.")
         except User.DoesNotExist:
             bot.reply_to(message, "Ошибка: пользователь не найден.")
-    # else:
-    #     bot.reply_to(message, f"Привет, {message.from_user.first_name}! Я бот для отслеживания заказов.")
+
 
 
     if str(message.chat.id) == ADMIN_TELEGRAM_ID:

@@ -2,11 +2,12 @@
 
 {% block title %}Подключение Telegram{% endblock %}
 
-
 {% block content %}
-    <h1>Подключение Telegram</h1>
-    <p>Нажмите кнопку, чтобы подключить Telegram-бота:</p>
-    <a href="https://t.me/FlowerDeliveryHelperBot?start={{ request.user.id }}" target="_blank" rel="noopener noreferrer">
-        <button>Подключить Telegram</button>
+<div class="container mt-4 text-center">
+    <h2 class="mb-3">Подключение Telegram</h2>
+    <p class="mb-4">Нажмите кнопку ниже, чтобы подключить Telegram-бота и получать уведомления о заказах.</p>
+    <a href="https://t.me/FlowerDeliveryHelperBot?start={{ request.user.id }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">
+        🔗 Подключить Telegram
     </a>
+</div>
 {% endblock %}

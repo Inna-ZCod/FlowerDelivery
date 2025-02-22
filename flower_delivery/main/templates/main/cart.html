@@ -3,98 +3,92 @@
 {% block title %}Корзина{% endblock %}
 
 {% block content %}
-<h1>Ваша корзина</h1>
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Ваша корзина</h1>
 
-<!-- Вывод сообщений -->
-{% if messages %}
-<ul class="messages">
-    {% for message in messages %}
-    <li class="{{ message.tags }}">{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
+    <!-- Вывод сообщений -->
+    {% if messages %}
+    <div class="alert alert-info">
+        {% for message in messages %}
+        <p class="mb-0">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
 
+    <form method="post" action="{% url 'confirm_order' %}">
+        {% csrf_token %}
+        <div class="row">
+            {% for item in cart_items %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <img src="{{ item.product.image.url }}" class="card-img-top" alt="{{ item.product.name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.product.name }}</h5>
+                        <p class="card-text">Цена: <strong>{{ item.product.price }} руб.</strong></p>
+                        <div class="mb-2">
+                            <label for="address_{{ item.id }}" class="form-label">Адрес доставки:</label>
+                            <input type="text" class="form-control" id="address_{{ item.id }}" name="address_{{ item.id }}" value="{{ item.address }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="card_text_{{ item.id }}" class="form-label">Текст на открытке:</label>
+                            <textarea class="form-control" id="card_text_{{ item.id }}" name="card_text_{{ item.id }}">{{ item.card_text }}</textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label for="signature_{{ item.id }}" class="form-label">Подпись:</label>
+                            <input type="text" class="form-control" id="signature_{{ item.id }}" name="signature_{{ item.id }}" value="{{ item.signature }}">
+                        </div>
+                        <button type="submit" formaction="{% url 'remove_from_cart' item.id %}" formmethod="post" class="btn btn-danger">Удалить</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
 
-<form method="post" action="{% url 'confirm_order' %}">
-    {% csrf_token %}
+        <div class="text-center mt-4">
+            <h2>Общая стоимость: <span class="text-success">{{ total_price }} руб.</span></h2>
+            <button type="submit" class="btn btn-success mt-3">Подтвердить заказ</button>
+        </div>
+    </form>
 
-    <ul>
-        {% for item in cart_items %}
-        <div class="cart-item">
-            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="150" height="150">
-            <h3>{{ item.product.name }}</h3>
-            <p>Цена: {{ item.product.price }} руб.</p>
+    <div class="text-center mt-4">
+        <a href="{% url 'catalog' %}" class="btn btn-secondary">Продолжить покупки</a>
+    </div>
 
-            <label for="address_{{ item.id }}">Адрес доставки:</label>
-            <input type="text" id="address_{{ item.id }}" name="address_{{ item.id }}" value="{{ item.address }}">
-
-            <label for="card_text_{{ item.id }}">Текст на открытке:</label>
-            <textarea id="card_text_{{ item.id }}" name="card_text_{{ item.id }}">{{ item.card_text }}</textarea>
-
-            <label for="signature_{{ item.id }}">Подпись:</label>
-            <input type="text" id="signature_{{ item.id }}" name="signature_{{ item.id }}" value="{{ item.signature }}">
-
-            <!-- Кнопка удаления теперь вне основной формы -->
-            <button type="submit" formaction="{% url 'remove_from_cart' item.id %}" formmethod="post" class="btn btn-danger">
-                Удалить
+    <!-- Блок "Для вдохновения" -->
+    <div class="inspiration-section mt-5">
+        <h2 class="text-center">Для вдохновения</h2>
+        <div id="inspirationCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#inspirationCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Текст 1"></button>
+                <button type="button" data-bs-target="#inspirationCarousel" data-bs-slide-to="1" aria-label="Текст 2"></button>
+                <button type="button" data-bs-target="#inspirationCarousel" data-bs-slide-to="2" aria-label="Текст 3"></button>
+            </div>
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                        <p class="text-center fs-5">"С любовью и теплом, пусть этот букет принесёт вам улыбку!"</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                        <p class="text-center fs-5">"Пусть этот букет станет символом радости и счастья в вашем дне!"</p>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                        <p class="text-center fs-5">"С наилучшими пожеланиями! Пусть эти цветы поднимут вам настроение."</p>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#inspirationCarousel" data-bs-slide="prev" style="filter: invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg);">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Назад</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#inspirationCarousel" data-bs-slide="next" style="filter: invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg);">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Вперёд</span>
             </button>
         </div>
-        {% endfor %}
-    </ul>
-
-    <h2>Общая стоимость: {{ total_price }} руб.</h2>
-
-    <!-- Кнопка для подтверждения заказа -->
-    <input type="hidden" name="confirm" value="yes">
-    <button type="submit" class="btn btn-success">Подтвердить заказ</button>
-</form>
-
-
-<!-- Кнопка для продолжения покупок -->
-<a href="{% url 'catalog' %}" class="btn btn-secondary">Продолжить покупки</a>
-
-
-
-<!-- Блок "Для вдохновения" -->
-<div class="inspiration-section mt-5">
-    <h2>Для вдохновения</h2>
-    <div id="inspirationCarousel" class="carousel slide" data-bs-ride="carousel">
-        <!-- Индикаторы (точки внизу) -->
-        <div class="carousel-indicators">
-            <button type="button" data-bs-target="#inspirationCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Текст 1" style="background-color: gray;"></button>
-            <button type="button" data-bs-target="#inspirationCarousel" data-bs-slide-to="1" aria-label="Текст 2" style="background-color: gray;"></button>
-            <button type="button" data-bs-target="#inspirationCarousel" data-bs-slide-to="2" aria-label="Текст 3" style="background-color: gray;"></button>
-        </div>
-
-        <!-- Слайды -->
-        <div class="carousel-inner">
-            <div class="carousel-item active">
-                <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
-                    <p class="text-center fs-5">"С любовью и теплом, пусть этот букет принесёт вам улыбку!"</p>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
-                    <p class="text-center fs-5">"Пусть этот букет станет символом радости и счастья в вашем дне!"</p>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
-                    <p class="text-center fs-5">"С наилучшими пожеланиями! Пусть эти цветы поднимут вам настроение."</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Кнопки "Назад" и "Вперёд" -->
-        <button class="carousel-control-prev" type="button" data-bs-target="#inspirationCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" style="background-color: gray;" aria-hidden="true"></span>
-            <span class="visually-hidden">Назад</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#inspirationCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon" style="background-color: gray;" aria-hidden="true"></span>
-            <span class="visually-hidden">Вперёд</span>
-        </button>
     </div>
 </div>
-
 {% endblock %}

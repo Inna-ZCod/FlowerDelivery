@@ -2,47 +2,54 @@
 
 {% block title %}Мои заказы{% endblock %}
 
-
 {% block content %}
-<h2>Мои заказы</h2>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Мои заказы</h2>
 
-{% for order in orders %}
-    <div class="order-item">
-        <p><strong>Заказ №{{ order.order_id }}</strong></p>
-        <p><strong>Статус:</strong> {{ order.status }}</p>
-        <p><strong>Дата создания:</strong> {{ order.created_at }}</p>
-        <p><strong>Букет:</strong> {{ order.bouquet_name }}</p>
-        <p><strong>Адрес доставки:</strong> {{ order.delivery_address }}</p>
+    {% if orders %}
+    <div class="row">
+        {% for order in orders %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Заказ №{{ order.order_id }}</h5>
+                    <p><strong>Статус:</strong> <span class="badge {% if order.status == 'Доставлен' %}bg-success{% elif order.status == 'В обработке' %}bg-warning{% else %}bg-secondary{% endif %}">{{ order.status }}</span></p>
+                    <p><strong>Дата создания:</strong> {{ order.created_at }}</p>
+                    <p><strong>Букет:</strong> {{ order.bouquet_name }}</p>
+                    <p><strong>Адрес доставки:</strong> {{ order.delivery_address }}</p>
 
-        {% for label, value in order.card_info %}
-            <p><strong>{{ label }}</strong> {{ value }}</p>
+                    {% for label, value in order.card_info %}
+                        <p><strong>{{ label }}</strong> {{ value }}</p>
+                    {% endfor %}
+
+                    <p><strong>Цена:</strong> {{ order.price }} руб.</p>
+
+                    <a href="{% url 'repeat_order' order.order_id %}" class="btn btn-primary">Повторить заказ</a>
+
+                    {% if order.status == "Доставлен" %}
+                        {% if not order.has_review %}
+                            <a href="{% url 'leave_review' order.order_id %}" class="btn btn-success">Оставить отзыв</a>
+                        {% else %}
+                            <p class="text-success mt-2"><strong>Отзыв уже оставлен</strong></p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
         {% endfor %}
-
-        <p><strong>Цена:</strong> {{ order.price }} руб.</p>
-
-        <a href="{% url 'repeat_order' order.order_id %}" class="btn btn-primary">Повторить заказ</a>
-
-        {% if order.status == "Доставлен" %}
-            {% if not order.has_review %}
-                <a href="{% url 'leave_review' order.order_id %}" class="btn btn-primary">Оставить отзыв</a>
-            {% else %}
-                <p class="text-success"><strong>Отзыв уже оставлен</strong></p>
-            {% endif %}
-        {% endif %}
-
-
     </div>
-    <hr>
-{% endfor %}
+    {% else %}
+        <p class="text-muted text-center">У вас пока нет заказов.</p>
+    {% endif %}
 
-
-<!-- Кнопка подключения телеграм-бота -->
+    <!-- Кнопка подключения телеграм-бота -->
     {% if not user.telegram_chat_id %}
-    <div class="alert alert-info">
-        Вы ещё не подключили Telegram для уведомлений.
-        <a class="btn btn-primary" href="https://t.me/FlowerDeliveryHelperBot?start={{ user.id }}" target="_blank" rel="noopener noreferrer">
+    <div class="alert alert-info mt-4 text-center">
+        <p>Вы ещё не подключили Telegram для уведомлений.</p>
+        <a class="btn btn-info" href="https://t.me/FlowerDeliveryHelperBot?start={{ user.id }}" target="_blank" rel="noopener noreferrer">
             Подключить Telegram
         </a>
     </div>
     {% endif %}
+</div>
 {% endblock %}

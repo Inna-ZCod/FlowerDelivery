@@ -3,37 +3,38 @@
 
 {% block title %}Подтверждение заказа{% endblock %}
 
-
 {% block content %}
-<h2>Подтвердите ваш заказ</h2>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Подтвердите ваш заказ</h2>
+    <div class="row">
+        {% for item in order_summary %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Букет: {{ item.bouquet_name }}</h5>
+                    <p class="card-text"><strong>Адрес доставки:</strong> {{ item.delivery_address }}</p>
+                    {% for label, value in item.card_info %}
+                        <p class="card-text"><strong>{{ label }}</strong> {{ value }}</p>
+                    {% endfor %}
+                    <p class="text-muted">Цена: <strong>{{ item.price }} руб.</strong></p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 
-<ul>
-    {% for item in order_summary %}
-        <li>
-            <strong>Букет:</strong> {{ item.bouquet_name }}<br>
-            <strong>Адрес доставки:</strong> {{ item.delivery_address }}<br>
-
-            {% for label, value in item.card_info %}
-                <strong>{{ label }}</strong> {{ value }}<br>
+    <div class="text-center mt-4">
+        <h3>Общая сумма: <span class="text-success">{{ total_price }} руб.</span></h3>
+        <form method="post" action="{% url 'finalize_order' %}">
+            {% csrf_token %}
+            {% for item in order_summary %}
+                <input type="hidden" name="address_{{ item.id }}" value="{{ item.delivery_address }}">
+                <input type="hidden" name="card_text_{{ item.id }}" value="{{ item.card_info|get_card_text }}">
+                <input type="hidden" name="signature_{{ item.id }}" value="{{ item.card_info|get_signature }}">
             {% endfor %}
-
-            <strong>Цена:</strong> {{ item.price }} руб.<br>
-        </li>
-    {% endfor %}
-</ul>
-
-<p><strong>Общая сумма:</strong> {{ total_price }} руб.</p>
-
-<form method="post" action="{% url 'finalize_order' %}">
-    {% csrf_token %}
-
-    {% for item in order_summary %}
-        <input type="hidden" name="address_{{ item.id }}" value="{{ item.delivery_address }}">
-        <input type="hidden" name="card_text_{{ item.id }}" value="{{ item.card_info|get_card_text }}">
-        <input type="hidden" name="signature_{{ item.id }}" value="{{ item.card_info|get_signature }}">
-    {% endfor %}
-
-    <button type="submit">Все верно, оформить заказ</button>
-</form>
-<a href="{% url 'cart' %}" class="btn btn-secondary">Вернуться назад</a>
+            <button type="submit" class="btn btn-success btn-lg mt-3">Все верно, оформить заказ</button>
+        </form>
+        <a href="{% url 'cart' %}" class="btn btn-secondary mt-3">Вернуться назад</a>
+    </div>
+</div>
 {% endblock %}
