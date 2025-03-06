@@ -14,6 +14,7 @@
 
 Администратор получает доступ к аналитике и отчетам о заказах, а также может управлять статусами заказов.
 
+![Добавление открытки](https://raw.githubusercontent.com/Inna-ZCod/FlowerDelivery/main/flower_delivery/media/products/fd_04.png)
 
 ## Технологии
 
