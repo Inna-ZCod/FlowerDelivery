@@ -16,12 +16,15 @@
 
 ## Скриншоты
 **Статус заказа с возможностью оставить отзыв и повторить заказ**
+
 <img src="https://raw.githubusercontent.com/Inna-ZCod/FlowerDelivery/main/flower_delivery/media/products/fd_03.png" alt="Статус заказа" width="400">
 
 **Функционал добавления открытки к букету**
+
 <img src="https://raw.githubusercontent.com/Inna-ZCod/FlowerDelivery/main/flower_delivery/media/products/fd_04.png" alt="Добавление открытки" width="400">
 
 **Отчеты администратора** (доступны только для аккаунта администратора)
+
 <img src="https://raw.githubusercontent.com/Inna-ZCod/FlowerDelivery/main/flower_delivery/media/products/fd_05.png" alt="Отчеты администратора" width="400">
 
 
