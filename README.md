@@ -70,6 +70,12 @@
    python manage.py runserver
    ```
 
+8. Запустите телеграм-бот:
+
+   ```
+   python telegram_bot.py
+   ```
+
 
 ## Использование
 
