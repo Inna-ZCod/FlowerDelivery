@@ -14,10 +14,16 @@
 
 Администратор получает доступ к аналитике и отчетам о заказах, а также может управлять статусами заказов.
 
-
+## Скриншоты
+**Статус заказа с возможностью оставить отзыв и повторить заказ**
 ![Статус заказа](https://raw.githubusercontent.com/Inna-ZCod/FlowerDelivery/main/flower_delivery/media/products/fd_03.png)
+
+**Функционал добавления открытки к букету**
 ![Добавление открытки](https://raw.githubusercontent.com/Inna-ZCod/FlowerDelivery/main/flower_delivery/media/products/fd_04.png)
+
+**Отчеты администратора** (доступны только для аккаунта администратора)
 ![Отчеты администратора](https://raw.githubusercontent.com/Inna-ZCod/FlowerDelivery/main/flower_delivery/media/products/fd_05.png)
+
 
 ## Технологии
 
